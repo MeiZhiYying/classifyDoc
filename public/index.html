@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能分类 - 文件分类系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <i class="fas fa-brain"></i>
+                智能分类
+            </h1>
+            <p class="subtitle">已自动分类文件64个</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <p class="upload-text">点击或拖拽上传文件夹</p>
+                <p class="upload-hint">支持批量上传，最多200个文件</p>
+                <input type="file" id="fileInput" multiple webkitdirectory accept="*/*" style="display: none;">
+            </div>
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">正在处理文件...</p>
+            </div>
+        </div>
+
+        <div class="categories-grid" id="categoriesGrid">
+            <!-- 分类卡片将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="file-list-modal" id="fileListModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">文件列表</h3>
+                    <button class="close-btn" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="fileList"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
