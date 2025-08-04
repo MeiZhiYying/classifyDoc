@@ -1,9 +1,14 @@
 package service
 
 import (
+	"github.com/gin-gonic/gin"
 	"log"
 	"math/rand"
+	"mime/multipart"
+	"net/http"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"file-classifier/internal/config"
@@ -25,7 +30,7 @@ func ClassifyByFilename(filename string) string {
 }
 
 // ClassifyByAI AI分析占位符函数
-func ClassifyByAI(filePath, filename string) string {
+func ClassifyByAI(filename string) string {
 	// 模拟AI分析延迟
 	time.Sleep(1 * time.Second)
 
@@ -51,4 +56,87 @@ func AddFileToCategory(category string, fileInfo models.FileInfo) {
 		stats.Count = len(stats.Files)
 		config.ClassificationStats[category] = stats
 	}
+}
+
+func CheckFiles(c *gin.Context, files []*multipart.FileHeader) {
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, models.Response{
+			Success: false,
+			Error:   "没有上传文件",
+		})
+		return
+	}
+	if len(files) > config.MaxFileCount {
+		c.JSON(http.StatusBadRequest, models.Response{
+			Success: false,
+			Error:   "最多支持上传200个文件",
+		})
+		return
+	}
+
+}
+func ClassificDOC(c *gin.Context, files []*multipart.FileHeader) {
+	results := &models.UploadResult{
+		Total:               len(files),
+		Processed:           0,
+		FirstStepClassified: 0,
+		AIClassified:        0,
+		Classifications:     config.ClassificationStats,
+	}
+
+	// Create a channel to limit concurrent goroutines
+	maxConcurrent := 30
+	semaphore := make(chan struct{}, maxConcurrent)
+
+	var wg sync.WaitGroup
+
+	for _, file := range files {
+		wg.Add(1)
+		go func(file *multipart.FileHeader) {
+			defer wg.Done()
+			semaphore <- struct{}{}        // Acquire a slot
+			defer func() { <-semaphore }() // Release the slot
+
+			filename := file.Filename
+			category := ClassifyByFilename(filename)
+
+			// Save file
+			savePath := filepath.Join(config.UploadDir, filename)
+			if err := c.SaveUploadedFile(file, savePath); err != nil {
+				log.Printf("保存文件失败: %s, %v", filename, err)
+				return
+			}
+
+			fileInfo := models.FileInfo{
+				Name: filename,
+				Path: savePath,
+				Size: file.Size,
+			}
+
+			if category != "未分类" {
+				fileInfo.Type = "filename"
+				AddFileToCategory(category, fileInfo)
+				results.FirstStepClassified++
+			} else {
+				// Second step: AI classification
+				aiCategory := ClassifyByAI(filename)
+				fileInfo.Type = "AI"
+				AddFileToCategory(aiCategory, fileInfo)
+				results.AIClassified++
+			}
+			results.Processed++
+
+		}(file)
+	}
+
+	wg.Wait()
+
+	results.Classifications = config.ClassificationStats
+	log.Printf("关键词分类完成: %d 个文件被分类", results.FirstStepClassified)
+	log.Printf("AI分析完成: %d 个文件被分类", results.AIClassified)
+	c.JSON(http.StatusOK, models.Response{
+		Success: true,
+		Message: "文件分类完成",
+		Results: results,
+	})
 }
