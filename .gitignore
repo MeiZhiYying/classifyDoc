@@ -21,7 +21,7 @@ go.sum
 # 上传的文件
 uploads/
 
-# 测试文件
+# 测试文件（本地使用，不提交到git）
 test_files/
 
 # 环境变量
