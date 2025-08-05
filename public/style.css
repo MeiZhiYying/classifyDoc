@@ -347,11 +347,15 @@ body {
 }
 
 .file-meta {
-    font-size: 0.8rem;
-    color: #6c757d;
+    font-size: 0.85rem;
+    color: #666;
     display: flex;
+    gap: 8px;
     align-items: center;
-    gap: 10px;
+}
+
+.file-meta span:nth-child(3) {
+    display: none; /* 隐藏路径显示 */
 }
 
 .file-badge {

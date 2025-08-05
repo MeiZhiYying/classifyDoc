@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"file-classifier/internal/config"
 	"file-classifier/internal/models"
@@ -31,8 +30,6 @@ func ClassifyByFilename(filename string) string {
 
 // ClassifyByAI AI分析占位符函数
 func ClassifyByAI(filename string) string {
-	// 模拟AI分析延迟
-	time.Sleep(1 * time.Second)
 
 	// 模拟AI分析结果（随机返回一个分类）
 	categories := []string{"合同", "简历", "发票", "论文"}
@@ -51,6 +48,11 @@ func ResetClassificationStats() {
 
 // AddFileToCategory 添加文件到分类
 func AddFileToCategory(category string, fileInfo models.FileInfo) {
+	// 使用互斥锁保护共享数据
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	if stats, exists := config.ClassificationStats[category]; exists {
 		stats.Files = append(stats.Files, fileInfo)
 		stats.Count = len(stats.Files)

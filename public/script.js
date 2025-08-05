@@ -48,8 +48,42 @@ const modalOverlay = document.getElementById('modalOverlay');
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeUpload();
-    loadStats();
+    autoScanUploads();
 });
+
+// 自动扫描uploads文件夹
+async function autoScanUploads() {
+    try {
+        console.log('开始自动扫描uploads文件夹...');
+        
+        const response = await fetch('/api/scan-uploads', {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('uploads文件夹扫描完成:', result);
+            if (result.results && result.results.total > 0) {
+                updateSubtitle(result.results.total);
+            }
+        } else {
+            console.error('扫描失败:', result.error);
+        }
+        
+        // 加载统计数据
+        loadStats();
+        
+    } catch (error) {
+        console.error('自动扫描失败:', error);
+        // 即使扫描失败，也要加载统计数据
+        loadStats();
+    }
+}
 
 // 初始化上传功能
 function initializeUpload() {
@@ -108,8 +142,53 @@ async function uploadFiles(files) {
     uploadProgress.style.display = 'block';
     
     const formData = new FormData();
+    
     files.forEach(file => {
         formData.append('files', file);
+        
+        // 尝试获取文件路径信息
+        let originalPath = file.name; // 默认使用文件名
+        
+        // 如果是文件夹上传，使用webkitRelativePath
+        if (file.webkitRelativePath) {
+            originalPath = file.webkitRelativePath;
+            console.log('文件夹上传 - 相对路径:', file.webkitRelativePath);
+        }
+        // 如果是单个文件，尝试其他方法
+        else {
+            console.log('单个文件上传 - 文件名:', file.name);
+            
+            // 尝试获取更多文件信息
+            const fileInfo = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified,
+                webkitRelativePath: file.webkitRelativePath,
+                path: file.path, // 在某些浏览器中可能可用
+                mozFullPath: file.mozFullPath // Firefox中可能可用
+            };
+            
+            console.log('文件详细信息:', fileInfo);
+            
+            // 如果有path属性，使用它
+            if (file.path) {
+                originalPath = file.path;
+                console.log('使用path属性:', file.path);
+            }
+            // 如果有mozFullPath，使用它
+            else if (file.mozFullPath) {
+                originalPath = file.mozFullPath;
+                console.log('使用mozFullPath:', file.mozFullPath);
+            }
+            // 否则使用文件名
+            else {
+                originalPath = file.name;
+                console.log('使用文件名:', file.name);
+            }
+        }
+        
+        formData.append('originalPaths', originalPath);
     });
 
     try {
@@ -292,16 +371,29 @@ async function openFile(filePath, fileName) {
         // 构建文件访问URL
         const fileUrl = `/files/${filePath}`;
         
-        // 尝试打开文件
-        const response = await fetch(fileUrl, {
-            method: 'HEAD' // 只检查文件是否存在
-        });
+        // 获取文件扩展名
+        const fileExt = fileName.split('.').pop().toLowerCase();
         
-        if (response.ok) {
-            // 文件存在，在新窗口中打开
+        // 定义可以在浏览器中直接打开的文件类型
+        const browserDisplayableTypes = [
+            'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg',
+            'txt', 'html', 'css', 'js', 'json', 'xml',
+            'mp4', 'avi', 'mov', 'wmv', 'flv',
+            'mp3', 'wav', 'ogg', 'aac',
+            'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+            'csv', 'md', 'log'
+        ];
+        
+        // 检查文件是否可以在浏览器中直接显示
+        const canDisplayInBrowser = browserDisplayableTypes.includes(fileExt);
+        
+        if (canDisplayInBrowser) {
+            // 可以在浏览器中显示的文件，直接在新窗口中打开
+            console.log('在浏览器中打开文件:', fileName);
             window.open(fileUrl, '_blank');
         } else {
-            // 文件不存在，尝试使用系统默认程序打开
+            // 不能在浏览器中显示的文件，提供下载
+            console.log('下载文件:', fileName);
             const downloadUrl = `/download/${filePath}`;
             const link = document.createElement('a');
             link.href = downloadUrl;

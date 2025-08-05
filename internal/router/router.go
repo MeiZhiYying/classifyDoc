@@ -27,6 +27,7 @@ func SetupRouter() *gin.Engine {
 	{
 		api.GET("/stats", handlers.StatsHandler)
 		api.GET("/files/:category", handlers.FilesHandler)
+		api.POST("/scan-uploads", handlers.ScanUploadsHandler)
 	}
 
 	// 文件上传路由
