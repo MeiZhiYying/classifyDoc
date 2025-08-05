@@ -333,15 +333,15 @@ async function showFileList(categoryName, stats) {
                     </div>
                     ${badge}
                     <div class="file-actions">
-                        <button class="file-action-btn" onclick="openFile('${encodeURIComponent(file.path)}', '${file.name}')" title="打开文件">
-                            <i class="fas fa-external-link-alt"></i>
+                        <button class="file-action-btn" onclick="openFile('${encodeURIComponent(file.path)}', '${file.name}')" title="下载文件">
+                            <i class="fas fa-download"></i>
                         </button>
                     </div>
                 `;
                 
-                // 添加点击事件来打开文件
+                // 添加点击事件来下载文件
                 fileItem.addEventListener('click', (e) => {
-                    // 如果点击的是按钮，不触发文件打开
+                    // 如果点击的是按钮，不触发文件下载
                     if (e.target.closest('.file-action-btn')) {
                         return;
                     }
@@ -365,60 +365,14 @@ async function showFileList(categoryName, stats) {
     }
 }
 
-// 打开文件函数
+// 下载文件函数
 async function openFile(filePath, fileName) {
     try {
-        // 构建文件访问URL
-        const fileUrl = `/files/${filePath}`;
+        // 弹出确认对话框，点击确定下载
+        const confirmDownload = confirm(`是否确定下载文件: ${fileName}？`);
         
-        // 获取文件扩展名
-        const fileExt = fileName.split('.').pop().toLowerCase();
-        
-        // 定义可以在浏览器中直接打开的文件类型
-        const browserDisplayableTypes = [
-            'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg',
-            'txt', 'html', 'css', 'js', 'json', 'xml',
-            'mp4', 'avi', 'mov', 'wmv', 'flv',
-            'mp3', 'wav', 'ogg', 'aac',
-            'csv', 'md', 'log'
-            // 移除Office文档，因为浏览器通常不支持直接显示
-            // 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'
-        ];
-        
-        // 定义Office文档类型
-        const officeTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-        
-        // 检查文件是否可以在浏览器中直接显示
-        const canDisplayInBrowser = browserDisplayableTypes.includes(fileExt);
-        const isOfficeDocument = officeTypes.includes(fileExt);
-        
-        if (canDisplayInBrowser) {
-            // 可以在浏览器中显示的文件，直接在新窗口中打开
-            console.log('在浏览器中打开文件:', fileName);
-            window.open(fileUrl, '_blank');
-        } else if (isOfficeDocument) {
-            // Office文档，提供在线预览选项
-            const choice = confirm(`${fileName} 是Office文档。\n\n选择操作：\n- 确定：尝试在线预览\n- 取消：直接下载`);
-            
-            if (choice) {
-                // 尝试使用在线预览服务
-                const previewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + fileUrl)}`;
-                console.log('尝试在线预览Office文档:', fileName);
-                window.open(previewUrl, '_blank');
-            } else {
-                // 直接下载
-                console.log('下载Office文档:', fileName);
-                const downloadUrl = `/download/${filePath}`;
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = fileName;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        } else {
-            // 不能在浏览器中显示的文件，提供下载
+        if (confirmDownload) {
+            // 用户点击确定，执行下载
             console.log('下载文件:', fileName);
             const downloadUrl = `/download/${filePath}`;
             const link = document.createElement('a');
@@ -428,10 +382,13 @@ async function openFile(filePath, fileName) {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        } else {
+            // 用户点击取消，不执行任何操作
+            console.log('用户取消下载:', fileName);
         }
     } catch (error) {
-        console.error('打开文件失败:', error);
-        alert(`无法打开文件: ${fileName}`);
+        console.error('下载文件失败:', error);
+        alert(`无法下载文件: ${fileName}`);
     }
 }
 
