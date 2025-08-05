@@ -235,6 +235,7 @@ async function showFileList(categoryName, stats) {
             data.files.forEach(file => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
+                fileItem.style.cursor = 'pointer';
                 
                 const fileIcon = getFileIcon(file.name);
                 const fileSize = formatFileSize(file.size);
@@ -252,7 +253,21 @@ async function showFileList(categoryName, stats) {
                         </div>
                     </div>
                     ${badge}
+                    <div class="file-actions">
+                        <button class="file-action-btn" onclick="openFile('${encodeURIComponent(file.path)}', '${file.name}')" title="打开文件">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
                 `;
+                
+                // 添加点击事件来打开文件
+                fileItem.addEventListener('click', (e) => {
+                    // 如果点击的是按钮，不触发文件打开
+                    if (e.target.closest('.file-action-btn')) {
+                        return;
+                    }
+                    openFile(encodeURIComponent(file.path), file.name);
+                });
                 
                 fileList.appendChild(fileItem);
             });
@@ -268,6 +283,37 @@ async function showFileList(categoryName, stats) {
     } catch (error) {
         console.error('获取文件列表失败:', error);
         alert('获取文件列表失败');
+    }
+}
+
+// 打开文件函数
+async function openFile(filePath, fileName) {
+    try {
+        // 构建文件访问URL
+        const fileUrl = `/files/${filePath}`;
+        
+        // 尝试打开文件
+        const response = await fetch(fileUrl, {
+            method: 'HEAD' // 只检查文件是否存在
+        });
+        
+        if (response.ok) {
+            // 文件存在，在新窗口中打开
+            window.open(fileUrl, '_blank');
+        } else {
+            // 文件不存在，尝试使用系统默认程序打开
+            const downloadUrl = `/download/${filePath}`;
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    } catch (error) {
+        console.error('打开文件失败:', error);
+        alert(`无法打开文件: ${fileName}`);
     }
 }
 

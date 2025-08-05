@@ -32,9 +32,15 @@ func SetupRouter() *gin.Engine {
 	// 文件上传路由
 	r.POST("/upload", handlers.UploadHandler)
 
+	// 文件访问和下载路由
+	r.GET("/files/*filepath", handlers.FileHandler)
+	r.GET("/download/*filepath", handlers.DownloadHandler)
+
 	// 静态文件服务 - 必须在最后定义
 	r.StaticFile("/", config.IndexFile)
 	r.Static("/static", config.StaticDir)
+	// 新增：上传文件静态服务
+	r.Static("/uploads", config.UploadDir)
 
 	return r
 }
