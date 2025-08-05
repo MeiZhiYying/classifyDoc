@@ -20,6 +20,7 @@ func UploadHandler(c *gin.Context) {
 		})
 		return
 	}
+
 	files := form.File["files"]
 	service.CheckFiles(c, files)
 	// 重置统计
