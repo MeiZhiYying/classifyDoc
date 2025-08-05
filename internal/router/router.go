@@ -27,6 +27,7 @@ func SetupRouter() *gin.Engine {
 	{
 		api.GET("/stats", handlers.StatsHandler)
 		api.GET("/files/:category", handlers.FilesHandler)
+		api.GET("/all-files", handlers.AllFilesHandler)
 		api.POST("/scan-uploads", handlers.ScanUploadsHandler)
 	}
 

@@ -36,6 +36,54 @@
             <!-- 分类卡片将通过JavaScript动态生成 -->
         </div>
 
+        <!-- 文件列表区域 -->
+        <div class="file-list-section">
+            <div class="file-list-header">
+                <h2 class="file-list-title">全部文件</h2>
+                <div class="file-list-controls">
+                    <div class="filter-control">
+                        <label for="categoryFilter">分类筛选：</label>
+                        <select id="categoryFilter">
+                            <option value="">全部类型</option>
+                        </select>
+                    </div>
+                    <div class="sort-controls">
+                        <button id="sortByTime" class="sort-btn active" data-sort="time">
+                            <i class="fas fa-clock"></i>
+                            时间排序
+                            <i class="fas fa-sort-down sort-icon"></i>
+                        </button>
+                        <button id="sortBySize" class="sort-btn" data-sort="size">
+                            <i class="fas fa-weight-hanging"></i>
+                            大小排序
+                            <i class="fas fa-sort sort-icon"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="file-list-table-container">
+                <table class="file-list-table" id="fileListTable">
+                    <thead>
+                        <tr>
+                            <th class="file-icon-col"></th>
+                            <th class="file-name-col">文件名</th>
+                            <th class="file-category-col">智能分类</th>
+                            <th class="file-size-col">文件大小</th>
+                            <th class="file-time-col">上传时间</th>
+                            <th class="file-actions-col">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileListBody">
+                        <!-- 文件列表将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+                <div class="no-files-message" id="noFilesMessage" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>暂无文件</p>
+                </div>
+            </div>
+        </div>
+
         <div class="file-list-modal" id="fileListModal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">

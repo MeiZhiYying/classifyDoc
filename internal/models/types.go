@@ -1,11 +1,15 @@
 package models
 
+import "time"
+
 // FileInfo 文件信息结构
 type FileInfo struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	Size int64  `json:"size"`
-	Type string `json:"type"` // "filename", "ai", "failed"
+	Name     string    `json:"name"`
+	Path     string    `json:"path"`
+	Size     int64     `json:"size"`
+	Type     string    `json:"type"`     // "filename", "ai", "failed"
+	Category string    `json:"category"` // 文件分类
+	ModTime  time.Time `json:"modTime"`  // 修改时间
 }
 
 // CategoryStats 分类统计结构

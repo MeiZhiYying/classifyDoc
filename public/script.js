@@ -1,5 +1,9 @@
 // 全局变量
 let currentStats = {};
+let allFiles = [];
+let currentSort = 'time';
+let currentOrder = 'desc';
+let currentFilter = '';
 
 // 分类配置
 const CATEGORY_CONFIG = {
@@ -45,9 +49,18 @@ const categoriesGrid = document.getElementById('categoriesGrid');
 const fileListModal = document.getElementById('fileListModal');
 const modalOverlay = document.getElementById('modalOverlay');
 
+// 文件列表相关元素
+const categoryFilter = document.getElementById('categoryFilter');
+const sortByTime = document.getElementById('sortByTime');
+const sortBySize = document.getElementById('sortBySize');
+const fileListTable = document.getElementById('fileListTable');
+const fileListBody = document.getElementById('fileListBody');
+const noFilesMessage = document.getElementById('noFilesMessage');
+
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeUpload();
+    initializeFileList();
     autoScanUploads();
 });
 
@@ -75,13 +88,15 @@ async function autoScanUploads() {
             console.error('扫描失败:', result.error);
         }
         
-        // 加载统计数据
+        // 加载统计数据和文件列表
         loadStats();
+        loadAllFiles();
         
     } catch (error) {
         console.error('自动扫描失败:', error);
-        // 即使扫描失败，也要加载统计数据
+        // 即使扫描失败，也要加载统计数据和文件列表
         loadStats();
+        loadAllFiles();
     }
 }
 
@@ -220,6 +235,7 @@ async function uploadFiles(files) {
             uploadProgress.style.display = 'none';
             uploadArea.style.display = 'block';
             loadStats();
+            loadAllFiles(); // 刷新文件列表
             updateSubtitle(result.results.total);
         }, 1000);
 
@@ -445,3 +461,197 @@ document.addEventListener('keydown', (e) => {
         closeModal();
     }
 });
+
+// === 文件列表功能 ===
+
+// 初始化文件列表功能
+function initializeFileList() {
+    // 初始化分类筛选器
+    updateCategoryFilter();
+    
+    // 绑定筛选器事件
+    categoryFilter.addEventListener('change', handleCategoryFilter);
+    
+    // 绑定排序按钮事件
+    sortByTime.addEventListener('click', () => handleSort('time'));
+    sortBySize.addEventListener('click', () => handleSort('size'));
+    
+    // 加载文件列表
+    loadAllFiles();
+}
+
+// 更新分类筛选器选项
+function updateCategoryFilter() {
+    // 清空现有选项（保留"全部类型"）
+    categoryFilter.innerHTML = '<option value="">全部类型</option>';
+    
+    // 添加分类选项
+    Object.keys(CATEGORY_CONFIG).forEach(categoryName => {
+        if (categoryName !== '新增分类') { // 排除"新增分类"
+            const option = document.createElement('option');
+            option.value = categoryName;
+            option.textContent = categoryName;
+            categoryFilter.appendChild(option);
+        }
+    });
+}
+
+// 处理分类筛选
+function handleCategoryFilter() {
+    currentFilter = categoryFilter.value;
+    loadAllFiles();
+}
+
+// 处理排序
+function handleSort(sortType) {
+    // 如果点击的是当前激活的排序，则切换排序顺序
+    if (currentSort === sortType) {
+        currentOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+        // 如果切换到新的排序方式，默认使用降序
+        currentSort = sortType;
+        currentOrder = sortType === 'time' ? 'desc' : 'desc'; // 时间默认降序（最新在前），大小默认降序（大的在前）
+    }
+    
+    // 更新按钮状态
+    updateSortButtons();
+    
+    // 重新加载文件列表
+    loadAllFiles();
+}
+
+// 更新排序按钮状态
+function updateSortButtons() {
+    // 重置所有按钮
+    sortByTime.classList.remove('active', 'desc', 'asc');
+    sortBySize.classList.remove('active', 'desc', 'asc');
+    
+    // 更新图标
+    sortByTime.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+    sortBySize.querySelector('.sort-icon').className = 'fas fa-sort sort-icon';
+    
+    // 设置激活的按钮
+    if (currentSort === 'time') {
+        sortByTime.classList.add('active', currentOrder);
+        sortByTime.querySelector('.sort-icon').className = currentOrder === 'desc' ? 'fas fa-sort-down sort-icon' : 'fas fa-sort-up sort-icon';
+    } else if (currentSort === 'size') {
+        sortBySize.classList.add('active', currentOrder);
+        sortBySize.querySelector('.sort-icon').className = currentOrder === 'desc' ? 'fas fa-sort-down sort-icon' : 'fas fa-sort-up sort-icon';
+    }
+}
+
+// 加载所有文件列表
+async function loadAllFiles() {
+    try {
+        const params = new URLSearchParams({
+            sort: currentSort,
+            order: currentOrder
+        });
+        
+        if (currentFilter) {
+            params.append('category', currentFilter);
+        }
+        
+        const response = await fetch(`/api/all-files?${params}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        allFiles = data.files || [];
+        
+        renderFileList();
+        
+    } catch (error) {
+        console.error('加载文件列表失败:', error);
+        allFiles = [];
+        renderFileList();
+    }
+}
+
+// 渲染文件列表
+function renderFileList() {
+    // 清空表格内容
+    fileListBody.innerHTML = '';
+    
+    if (allFiles.length === 0) {
+        // 显示无文件消息
+        fileListTable.style.display = 'none';
+        noFilesMessage.style.display = 'block';
+        return;
+    }
+    
+    // 隐藏无文件消息，显示表格
+    noFilesMessage.style.display = 'none';
+    fileListTable.style.display = 'table';
+    
+    // 渲染文件行
+    allFiles.forEach(file => {
+        const row = createFileRow(file);
+        fileListBody.appendChild(row);
+    });
+}
+
+// 创建文件行
+function createFileRow(file) {
+    const row = document.createElement('tr');
+    
+    // 文件图标
+    const iconCell = document.createElement('td');
+    iconCell.innerHTML = `<i class="${getFileIcon(file.name)} file-table-icon"></i>`;
+    row.appendChild(iconCell);
+    
+    // 文件名
+    const nameCell = document.createElement('td');
+    nameCell.innerHTML = `<div class="file-table-name">${file.name}</div>`;
+    row.appendChild(nameCell);
+    
+    // 分类
+    const categoryCell = document.createElement('td');
+    const categoryConfig = CATEGORY_CONFIG[file.category] || CATEGORY_CONFIG['未分类'];
+    categoryCell.innerHTML = `<span class="file-table-category ${categoryConfig.color}">${file.category}</span>`;
+    row.appendChild(categoryCell);
+    
+    // 大小
+    const sizeCell = document.createElement('td');
+    sizeCell.innerHTML = `<div class="file-table-size">${formatFileSize(file.size)}</div>`;
+    row.appendChild(sizeCell);
+    
+    // 时间
+    const timeCell = document.createElement('td');
+    const timeStr = formatFileTime(file.modTime);
+    timeCell.innerHTML = `<div class="file-table-time">${timeStr}</div>`;
+    row.appendChild(timeCell);
+    
+    // 操作
+    const actionCell = document.createElement('td');
+    actionCell.innerHTML = `<button class="file-table-action" onclick="openFile('${encodeURIComponent(file.path)}', '${file.name}')" title="下载文件">
+        <i class="fas fa-download"></i>
+    </button>`;
+    row.appendChild(actionCell);
+    
+    return row;
+}
+
+// 格式化文件时间
+function formatFileTime(modTime) {
+    const date = new Date(modTime);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffHours < 1) {
+        return '刚刚';
+    } else if (diffHours < 24) {
+        return `${diffHours}小时前`;
+    } else if (diffDays < 7) {
+        return `${diffDays}天前`;
+    } else {
+        return date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+}
