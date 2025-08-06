@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,9 +16,111 @@ import (
 	"file-classifier/internal/service"
 )
 
+// AddCategoryHandler 添加新分类
+func AddCategoryHandler(c *gin.Context) {
+	var request struct {
+		CategoryName string `json:"categoryName" binding:"required"`
+		Username     string `json:"username" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, models.Response{
+			Success: false,
+			Error:   "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	// 检查新增分类数量限制（最多3个）
+	keywords := config.GetClassificationKeywords()
+	newCategoryCount := 0
+	for categoryName := range keywords {
+		if !config.IsPredefinedCategory(categoryName) {
+			newCategoryCount++
+		}
+	}
+
+	if newCategoryCount >= 3 {
+		c.JSON(http.StatusBadRequest, models.Response{
+			Success: false,
+			Error:   "新增分类数量已达上限（最多3个），请删除一些分类后再添加",
+		})
+		return
+	}
+
+	// 使用用户名作为关键词
+	keywordList := []string{request.Username}
+
+	// 添加新分类
+	config.AddCategory(request.CategoryName, keywordList)
+
+	// 重新扫描文件以应用新分类
+	go func() {
+		// 在后台重新扫描文件
+		service.ResetClassificationStats()
+
+		// 检查uploads目录是否存在
+		if _, err := os.Stat(config.UploadDir); os.IsNotExist(err) {
+			return
+		}
+
+		// 遍历uploads目录并重新分类
+		filepath.Walk(config.UploadDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// 跳过目录本身
+			if path == config.UploadDir {
+				return nil
+			}
+
+			// 只处理文件，跳过目录
+			if !info.IsDir() {
+				// 获取相对路径
+				relPath, err := filepath.Rel(config.UploadDir, path)
+				if err != nil {
+					return err
+				}
+
+				// 分类文件
+				category := service.ClassifyByFilename(info.Name())
+
+				// 创建文件信息
+				fileInfo := models.FileInfo{
+					Name:     info.Name(),
+					Path:     relPath,
+					Size:     info.Size(),
+					Type:     "filename",
+					Category: category,
+					ModTime:  info.ModTime(),
+				}
+
+				// 添加到分类
+				service.AddFileToCategory(category, fileInfo)
+			}
+			return nil
+		})
+	}()
+
+	c.JSON(http.StatusOK, models.Response{
+		Success: true,
+		Message: fmt.Sprintf("分类 '%s' 添加成功，关键词: %s", request.CategoryName, request.Username),
+	})
+}
+
+// GetCategoriesHandler 获取所有分类
+func GetCategoriesHandler(c *gin.Context) {
+	categories := config.GetClassificationKeywords()
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"categories": categories,
+	})
+}
+
 // StatsHandler 获取分类统计
 func StatsHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, config.ClassificationStats)
+	c.JSON(http.StatusOK, config.GetClassificationStats())
 }
 
 // FilesHandler 获取指定分类的文件列表

@@ -12,9 +12,8 @@
         <header class="header">
             <h1 class="title">
                 <i class="fas fa-brain"></i>
-                智能分类
+                智能文档分类系统
             </h1>
-            <p class="subtitle">已自动分类文件0个</p>
         </header>
 
         <div class="upload-section">
@@ -34,6 +33,32 @@
 
         <div class="categories-grid" id="categoriesGrid">
             <!-- 分类卡片将通过JavaScript动态生成 -->
+        </div>
+
+        <!-- 新增分类模态框 -->
+        <div class="add-category-modal" id="addCategoryModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加新分类</h3>
+                    <button class="close-btn" onclick="closeAddCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="categoryName">分类名称:</label>
+                        <input type="text" id="categoryName" placeholder="请输入分类名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">用户名(关键词):</label>
+                        <input type="text" id="username" placeholder="请输入用户名作为关键词" required>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-cancel" onclick="closeAddCategoryModal()">取消</button>
+                        <button class="btn-confirm" onclick="addCategory()">确认添加</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 文件列表区域 -->
@@ -61,7 +86,7 @@
                     </div>
                 </div>
             </div>
-            <div class="file-list-table-container">
+            <div class="file-list-table-container" id="fileListContainer">
                 <table class="file-list-table" id="fileListTable">
                     <thead>
                         <tr>

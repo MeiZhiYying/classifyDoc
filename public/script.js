@@ -9,33 +9,28 @@ let currentFilter = '';
 const CATEGORY_CONFIG = {
     '合同': {
         icon: 'fas fa-file-contract',
-        color: 'work',
+        color: 'contract',
         description: '包含合同协议等相关文件'
     },
     '简历': {
         icon: 'fas fa-user-tie',
-        color: 'personal',
+        color: 'resume',
         description: '包含个人简历和求职相关文件'
     },
     '发票': {
         icon: 'fas fa-receipt',
-        color: 'images',
+        color: 'invoice',
         description: '包含发票收据等财务文件'
     },
     '论文': {
         icon: 'fas fa-graduation-cap',
-        color: 'study',
+        color: 'thesis',
         description: '包含学术论文和研究文件'
     },
     '未分类': {
         icon: 'fas fa-question-circle',
         color: 'unclassified',
         description: '暂未识别类型的文件'
-    },
-    '新增分类': {
-        icon: 'fas fa-plus-circle',
-        color: 'new',
-        description: '自定义分类，可自动分析'
     }
 };
 
@@ -56,6 +51,11 @@ const sortBySize = document.getElementById('sortBySize');
 const fileListTable = document.getElementById('fileListTable');
 const fileListBody = document.getElementById('fileListBody');
 const noFilesMessage = document.getElementById('noFilesMessage');
+
+// 新增分类模态框元素
+const addCategoryModal = document.getElementById('addCategoryModal');
+const categoryNameInput = document.getElementById('categoryName');
+const usernameInput = document.getElementById('username');
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -81,9 +81,6 @@ async function autoScanUploads() {
         
         if (result.success) {
             console.log('uploads文件夹扫描完成:', result);
-            if (result.results && result.results.total > 0) {
-                updateSubtitle(result.results.total);
-            }
         } else {
             console.error('扫描失败:', result.error);
         }
@@ -236,7 +233,6 @@ async function uploadFiles(files) {
             uploadArea.style.display = 'block';
             loadStats();
             loadAllFiles(); // 刷新文件列表
-            updateSubtitle(result.results.total);
         }, 1000);
 
         console.log('上传成功:', result);
@@ -256,10 +252,12 @@ function updateProgress(percent, text) {
     progressText.textContent = text;
 }
 
-// 更新副标题
-function updateSubtitle(count) {
-    const subtitle = document.querySelector('.subtitle');
-    subtitle.textContent = `已自动分类文件${count}个`;
+// 更新文件数量显示
+function updateFileCount(count) {
+    const fileCount = document.getElementById('fileCount');
+    if (fileCount) {
+        fileCount.textContent = `(${count}个)`;
+    }
 }
 
 // 加载统计数据
@@ -275,33 +273,97 @@ async function loadStats() {
         
     } catch (error) {
         console.error('加载统计数据失败:', error);
-        // 显示默认的空状态
         renderCategories();
     }
 }
 
-// 渲染分类卡片
+// 渲染分类卡片 - 固定8个位置的2x4布局
 function renderCategories() {
+    console.log('开始渲染分类卡片，currentStats:', currentStats);
     categoriesGrid.innerHTML = '';
     
-    Object.entries(CATEGORY_CONFIG).forEach(([categoryName, config]) => {
-        const stats = currentStats[categoryName] || { count: 0, files: [] };
-        
-        const card = document.createElement('div');
-        card.className = `category-card ${config.color}`;
-        card.innerHTML = `
-            <i class="${config.icon} category-icon"></i>
-            <h3 class="category-title">${categoryName}</h3>
-            <div class="category-count">${stats.count}</div>
-            <p class="category-description">${config.description}</p>
-        `;
-        
-        // 添加点击事件
-        card.addEventListener('click', () => {
-            showFileList(categoryName, stats);
-        });
-        
-        categoriesGrid.appendChild(card);
+    // 确保currentStats不为空，如果为空则使用默认值
+    if (!currentStats || Object.keys(currentStats).length === 0) {
+        currentStats = {
+            '合同': { count: 0, files: [] },
+            '简历': { count: 0, files: [] },
+            '发票': { count: 0, files: [] },
+            '论文': { count: 0, files: [] },
+            '未分类': { count: 0, files: [] }
+        };
+    }
+    
+    // 固定的分类顺序：前4个预定义分类
+    const fixedCategories = ['合同', '简历', '发票', '论文'];
+    
+    // 获取新增的分类（排除预定义分类和未分类）
+    const allCategories = Object.keys(currentStats);
+    const newCategories = allCategories.filter(cat => 
+        !fixedCategories.includes(cat) && cat !== '未分类'
+    ).slice(0, 3); // 最多3个新增分类
+    
+    // 创建固定的8个位置
+    const positions = [
+        // 第一行：4个预定义分类
+        ...fixedCategories,
+        // 第二行：3个新增分类位置 + 1个未分类
+        ...Array(3).fill(null).map((_, index) => 
+            newCategories[index] || `add-new-${index}`
+        ),
+        '未分类'
+    ];
+    
+    positions.forEach((position, index) => {
+        if (position.startsWith('add-new-')) {
+            // 创建"新增分类"卡片
+            const addNewIndex = parseInt(position.split('-')[2]);
+            const card = document.createElement('div');
+            card.className = 'category-card add-new';
+            card.innerHTML = `
+                <i class="fas fa-plus category-icon"></i>
+                <h3 class="category-title">新增分类</h3>
+                <div class="category-count">+</div>
+                <p class="category-description">点击添加新分类</p>
+            `;
+            
+            // 添加点击事件
+            card.addEventListener('click', () => {
+                showAddCategoryModal();
+            });
+            
+            categoriesGrid.appendChild(card);
+        } else {
+            // 创建正常分类卡片
+            const categoryName = position;
+            const stats = currentStats[categoryName] || { count: 0, files: [] };
+            
+            // 获取分类配置
+            let config = CATEGORY_CONFIG[categoryName];
+            if (!config) {
+                // 为新分类创建默认配置
+                config = {
+                    icon: 'fas fa-folder',
+                    color: 'default',
+                    description: '自定义分类'
+                };
+            }
+            
+            const card = document.createElement('div');
+            card.className = `category-card ${config.color}`;
+            card.innerHTML = `
+                <i class="${config.icon} category-icon"></i>
+                <h3 class="category-title">${categoryName}</h3>
+                <div class="category-count">${stats.count}</div>
+                <p class="category-description">${config.description}</p>
+            `;
+            
+            // 添加点击事件
+            card.addEventListener('click', () => {
+                showFileList(categoryName, stats);
+            });
+            
+            categoriesGrid.appendChild(card);
+        }
     });
 }
 
@@ -455,10 +517,84 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+// 显示新增分类模态框
+function showAddCategoryModal() {
+    document.getElementById('addCategoryModal').style.display = 'flex';
+}
+
+// 关闭新增分类模态框
+function closeAddCategoryModal() {
+    document.getElementById('addCategoryModal').style.display = 'none';
+    // 清空表单
+    document.getElementById('categoryName').value = '';
+    document.getElementById('username').value = '';
+}
+
+// 添加新分类
+async function addCategory() {
+    const categoryName = document.getElementById('categoryName').value.trim();
+    const username = document.getElementById('username').value.trim();
+    
+    if (!categoryName || !username) {
+        alert('请填写完整的分类名称和用户名');
+        return;
+    }
+    
+    try {
+        console.log('正在添加新分类:', { categoryName, username });
+        
+        const response = await fetch('/api/add-category', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                categoryName: categoryName,
+                username: username
+            })
+        });
+        
+        console.log('服务器响应状态:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('服务器响应:', result);
+        
+        if (result.success) {
+            alert(result.message);
+            closeAddCategoryModal();
+            
+            // 等待一段时间让后台扫描完成
+            console.log('等待后台扫描完成...');
+            setTimeout(() => {
+                // 重新加载统计数据以显示新分类
+                loadStats();
+                loadAllFiles();
+                console.log('重新加载完成');
+            }, 2000);
+        } else {
+            alert('添加分类失败: ' + result.error);
+            console.error('添加分类失败:', result.error);
+        }
+        
+    } catch (error) {
+        console.error('添加分类失败:', error);
+        alert('添加分类失败: ' + error.message);
+    }
+}
+
 // 处理 ESC 键关闭模态框
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && fileListModal.style.display === 'flex') {
-        closeModal();
+    if (e.key === 'Escape') {
+        if (fileListModal.style.display === 'flex') {
+            closeModal();
+        }
+        if (document.getElementById('addCategoryModal').style.display === 'flex') {
+            closeAddCategoryModal();
+        }
     }
 });
 
@@ -482,17 +618,15 @@ function initializeFileList() {
 
 // 更新分类筛选器选项
 function updateCategoryFilter() {
-    // 清空现有选项（保留"全部类型"）
+    // 清空现有选项
     categoryFilter.innerHTML = '<option value="">全部类型</option>';
     
     // 添加分类选项
     Object.keys(CATEGORY_CONFIG).forEach(categoryName => {
-        if (categoryName !== '新增分类') { // 排除"新增分类"
-            const option = document.createElement('option');
-            option.value = categoryName;
-            option.textContent = categoryName;
-            categoryFilter.appendChild(option);
-        }
+        const option = document.createElement('option');
+        option.value = categoryName;
+        option.textContent = categoryName;
+        categoryFilter.appendChild(option);
     });
 }
 
@@ -584,6 +718,9 @@ function renderFileList() {
     // 隐藏无文件消息，显示表格
     noFilesMessage.style.display = 'none';
     fileListTable.style.display = 'table';
+    
+    // 更新文件数量显示
+    updateFileCount(allFiles.length);
     
     // 渲染文件行
     allFiles.forEach(file => {

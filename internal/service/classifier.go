@@ -48,10 +48,9 @@ func ResetClassificationStats() {
 
 // AddFileToCategory 添加文件到分类
 func AddFileToCategory(category string, fileInfo models.FileInfo) {
-	// 使用互斥锁保护共享数据
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+	// 使用全局互斥锁保护共享数据
+	config.StatsMutex.Lock()
+	defer config.StatsMutex.Unlock()
 
 	if stats, exists := config.ClassificationStats[category]; exists {
 		stats.Files = append(stats.Files, fileInfo)
