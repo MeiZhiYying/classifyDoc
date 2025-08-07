@@ -1281,23 +1281,21 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: #fff;
+    background: none;
     border: none;
-    border-radius: 50%;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
     z-index: 2;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: none;
     padding: 0;
 }
 .delete-category-btn .delete-x {
     color: #222;
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: bold;
     line-height: 1;
     pointer-events: none;
@@ -1305,21 +1303,8 @@ body {
     font-family: 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     transition: color 0.2s;
 }
-.delete-category-btn:hover, .delete-category-btn:active {
-    background: #222;
-}
 .delete-category-btn:hover .delete-x {
-    color: #fff;
-}
-.delete-category-btn.shake {
-    animation: shakeX 0.4s cubic-bezier(.36,.07,.19,.97) both;
-}
-@keyframes shakeX {
-    10%, 90% { transform: translateX(-2px); }
-    20%, 80% { transform: translateX(4px); }
-    30%, 50%, 70% { transform: translateX(-6px); }
-    40%, 60% { transform: translateX(6px); }
-    100% { transform: none; }
+    color: #e11d48;
 }
 @media (max-width: 768px) {
     .delete-category-btn {
@@ -1329,7 +1314,7 @@ body {
         height: 28px;
     }
     .delete-category-btn .delete-x {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
     }
 }
 .category-card { position: relative; }
