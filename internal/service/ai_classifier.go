@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 	"time"
 
@@ -111,32 +110,6 @@ func ClassifyWithAI(title, content string) (string, error) {
 	req.Header.Set("Ai-Gateway-Product-Name", ProductName)
 	req.Header.Set("User-Agent", "PostmanRuntime/7.32.3")
 
-	// 输出调试信息 - 模拟curl格式
-	log.Printf("=== AI请求调试信息 ===")
-	log.Printf("curl --location '%s' \\", WPSAIURL)
-	log.Printf("--header 'Content-Type: application/json' \\")
-	log.Printf("--header 'Authorization: Bearer %s' \\", BearerToken)
-	log.Printf("--header 'Client-Request-Id: %s' \\", req.Header.Get("Client-Request-Id"))
-	log.Printf("--header 'Ai-Gateway-Intention-Code: %s' \\", IntentionCode)
-	log.Printf("--header 'Ai-Gateway-Product-Name: %s' \\", ProductName)
-	log.Printf("--header 'User-Agent: %s' \\", req.Header.Get("User-Agent"))
-	log.Printf("--header 'Accept: %s' \\", req.Header.Get("Accept"))
-	log.Printf("--header 'Accept-Encoding: %s' \\", req.Header.Get("Accept-Encoding"))
-	log.Printf("--header 'Connection: %s' \\", req.Header.Get("Connection"))
-	log.Printf("--header 'Content-Length: %s' \\", req.Header.Get("Content-Length"))
-	log.Printf("--data '%s'", string(jsonData))
-	log.Printf("=== 请求结束 ===")
-
-	// ==================【关键调试代码】==================
-	// 在发送请求前，完整地打印出即将发出的请求报文
-	// 第二个参数 'true' 表示也打印请求体 (body)
-	dump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		log.Fatalf("打印请求失败: %v", err)
-	}
-
-	// 将完整的请求报文打印到日志
-	log.Printf("======= GO 发出的完整HTTP请求报文 =======\n%s\n========================================", string(dump))
 	// ======================================================
 	// 发送请求
 	client := &http.Client{
