@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"file-classifier/internal/config"
 	"file-classifier/internal/models"
 	"file-classifier/internal/service"
+	"file-classifier/internal/utils"
 )
 
 // AddCategoryHandler 添加新分类
@@ -232,7 +234,14 @@ func ScanUploadsHandler(c *gin.Context) {
 				results.FirstStepClassified++
 			} else {
 				// Second step: AI classification
-				aiCategory := service.ClassifyByAI(filename)
+				// 读取文件内容
+				fullPath := filepath.Join(config.UploadDir, filePath)
+				content, err := utils.ReadFileContent(fullPath)
+				if err != nil {
+					log.Printf("读取文件内容失败: %s, %v", filename, err)
+					content = ""
+				}
+				aiCategory := service.ClassifyByAI(filename, content)
 				fileInfo.Type = "AI"
 				service.AddFileToCategory(aiCategory, fileInfo)
 				results.AIClassified++
