@@ -14,7 +14,7 @@
                 <i class="fas fa-brain"></i>
                 智能文档分类系统
             </h1>
-        </header>
+        </header> 
 
         <div class="upload-section">
             <div class="upload-area" id="uploadArea">
@@ -64,7 +64,22 @@
         <!-- 文件列表区域 -->
         <div class="file-list-section">
             <div class="file-list-header">
-                <h2 class="file-list-title">全部文件</h2>
+                <div class="file-list-title-section">
+                    <h2 class="file-list-title">
+                        <i class="fas fa-folder-open"></i>
+                        全部文件
+                        <span class="file-count" id="fileCount">(0个)</span>
+                    </h2>
+                    <div class="search-box">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" placeholder="搜索文件名..." autocomplete="off">
+                            <button id="clearSearch" class="clear-search-btn" style="display: none;" title="清空搜索">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="file-list-controls">
                     <div class="filter-control">
                         <label for="categoryFilter">分类筛选：</label>

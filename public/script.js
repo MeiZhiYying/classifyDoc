@@ -4,6 +4,8 @@ let allFiles = [];
 let currentSort = 'time';
 let currentOrder = 'desc';
 let currentFilter = '';
+let currentSearchKeyword = '';
+let allFilesOriginal = []; // 保存原始文件列表
 
 // 分类配置
 const CATEGORY_CONFIG = {
@@ -45,6 +47,8 @@ const fileListModal = document.getElementById('fileListModal');
 const modalOverlay = document.getElementById('modalOverlay');
 
 // 文件列表相关元素
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearch');
 const categoryFilter = document.getElementById('categoryFilter');
 const sortByTime = document.getElementById('sortByTime');
 const sortBySize = document.getElementById('sortBySize');
@@ -253,10 +257,25 @@ function updateProgress(percent, text) {
 }
 
 // 更新文件数量显示
-function updateFileCount(count) {
+function updateFileCount(filteredCount) {
     const fileCount = document.getElementById('fileCount');
     if (fileCount) {
-        fileCount.textContent = `(${count}个)`;
+        const totalCount = allFilesOriginal.length;
+        
+        if (filteredCount < totalCount) {
+            // 有筛选或搜索时显示结果统计
+            if (currentSearchKeyword && currentFilter) {
+                fileCount.textContent = `(${filteredCount}个，共${totalCount}个)`;
+            } else if (currentSearchKeyword) {
+                fileCount.textContent = `(搜索到${filteredCount}个，共${totalCount}个)`;
+            } else if (currentFilter) {
+                fileCount.textContent = `(${filteredCount}个，共${totalCount}个)`;
+            } else {
+                fileCount.textContent = `(${filteredCount}个)`;
+            }
+        } else {
+            fileCount.textContent = `(${filteredCount}个)`;
+        }
     }
 }
 
@@ -269,11 +288,17 @@ async function loadStats() {
         }
         
         currentStats = await response.json();
+        // 保存到全局变量以供分类筛选器使用
+        window.currentStats = currentStats;
         renderCategories();
+        // 更新分类筛选器选项
+        updateCategoryFilter();
         
     } catch (error) {
         console.error('加载统计数据失败:', error);
         renderCategories();
+        // 即使出错也要更新筛选器
+        updateCategoryFilter();
     }
 }
 
@@ -335,7 +360,7 @@ function renderCategories() {
         } else {
             // 创建正常分类卡片
             const categoryName = position;
-            const stats = currentStats[categoryName] || { count: 0, files: [] };
+        const stats = currentStats[categoryName] || { count: 0, files: [] };
             
             // 获取分类配置
             let config = CATEGORY_CONFIG[categoryName];
@@ -347,22 +372,22 @@ function renderCategories() {
                     description: '自定义分类'
                 };
             }
-            
-            const card = document.createElement('div');
-            card.className = `category-card ${config.color}`;
-            card.innerHTML = `
-                <i class="${config.icon} category-icon"></i>
-                <h3 class="category-title">${categoryName}</h3>
-                <div class="category-count">${stats.count}</div>
-                <p class="category-description">${config.description}</p>
-            `;
-            
-            // 添加点击事件
-            card.addEventListener('click', () => {
-                showFileList(categoryName, stats);
-            });
-            
-            categoriesGrid.appendChild(card);
+        
+        const card = document.createElement('div');
+        card.className = `category-card ${config.color}`;
+        card.innerHTML = `
+            <i class="${config.icon} category-icon"></i>
+            <h3 class="category-title">${categoryName}</h3>
+            <div class="category-count">${stats.count}</div>
+            <p class="category-description">${config.description}</p>
+        `;
+        
+        // 添加点击事件
+        card.addEventListener('click', () => {
+            showFileList(categoryName, stats);
+        });
+        
+        categoriesGrid.appendChild(card);
         }
     });
 }
@@ -573,6 +598,8 @@ async function addCategory() {
                 // 重新加载统计数据以显示新分类
                 loadStats();
                 loadAllFiles();
+                // 更新分类筛选器选项
+                updateCategoryFilter();
                 console.log('重新加载完成');
             }, 2000);
         } else {
@@ -590,7 +617,7 @@ async function addCategory() {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (fileListModal.style.display === 'flex') {
-            closeModal();
+        closeModal();
         }
         if (document.getElementById('addCategoryModal').style.display === 'flex') {
             closeAddCategoryModal();
@@ -604,6 +631,11 @@ document.addEventListener('keydown', (e) => {
 function initializeFileList() {
     // 初始化分类筛选器
     updateCategoryFilter();
+    
+    // 绑定搜索事件
+    searchInput.addEventListener('input', handleSearch);
+    searchInput.addEventListener('keydown', handleSearchKeydown);
+    clearSearchBtn.addEventListener('click', clearSearch);
     
     // 绑定筛选器事件
     categoryFilter.addEventListener('change', handleCategoryFilter);
@@ -621,19 +653,29 @@ function updateCategoryFilter() {
     // 清空现有选项
     categoryFilter.innerHTML = '<option value="">全部类型</option>';
     
-    // 添加分类选项
-    Object.keys(CATEGORY_CONFIG).forEach(categoryName => {
-        const option = document.createElement('option');
-        option.value = categoryName;
-        option.textContent = categoryName;
-        categoryFilter.appendChild(option);
-    });
+    // 从当前统计数据中获取所有分类
+    if (window.currentStats) {
+        Object.keys(window.currentStats).forEach(categoryName => {
+            const option = document.createElement('option');
+            option.value = categoryName;
+            option.textContent = categoryName;
+            categoryFilter.appendChild(option);
+        });
+    } else {
+        // 如果还没有统计数据，使用默认配置
+        Object.keys(CATEGORY_CONFIG).forEach(categoryName => {
+            const option = document.createElement('option');
+            option.value = categoryName;
+            option.textContent = categoryName;
+            categoryFilter.appendChild(option);
+        });
+    }
 }
 
 // 处理分类筛选
 function handleCategoryFilter() {
     currentFilter = categoryFilter.value;
-    loadAllFiles();
+    applyFilters();
 }
 
 // 处理排序
@@ -682,22 +724,20 @@ async function loadAllFiles() {
             order: currentOrder
         });
         
-        if (currentFilter) {
-            params.append('category', currentFilter);
-        }
-        
         const response = await fetch(`/api/all-files?${params}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         
         const data = await response.json();
-        allFiles = data.files || [];
+        allFilesOriginal = data.files || [];
         
-        renderFileList();
+        // 应用搜索和筛选
+        applyFilters();
         
     } catch (error) {
         console.error('加载文件列表失败:', error);
+        allFilesOriginal = [];
         allFiles = [];
         renderFileList();
     }
@@ -791,4 +831,64 @@ function formatFileTime(modTime) {
             day: '2-digit'
         });
     }
+}
+
+// === 搜索和筛选功能 ===
+
+// 处理搜索输入
+function handleSearch(e) {
+    const keyword = e.target.value.trim();
+    currentSearchKeyword = keyword;
+    
+    // 显示或隐藏清空按钮
+    if (keyword) {
+        clearSearchBtn.style.display = 'flex';
+    } else {
+        clearSearchBtn.style.display = 'none';
+    }
+    
+    // 实时搜索（防抖处理）
+    clearTimeout(window.searchTimeout);
+    window.searchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 300);
+}
+
+// 处理搜索框按键事件
+function handleSearchKeydown(e) {
+    if (e.key === 'Escape') {
+        clearSearch();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        applyFilters();
+    }
+}
+
+// 清空搜索
+function clearSearch() {
+    searchInput.value = '';
+    currentSearchKeyword = '';
+    clearSearchBtn.style.display = 'none';
+    applyFilters();
+}
+
+// 应用搜索和筛选
+function applyFilters() {
+    let filteredFiles = [...allFilesOriginal];
+    
+    // 按分类筛选
+    if (currentFilter) {
+        filteredFiles = filteredFiles.filter(file => file.category === currentFilter);
+    }
+    
+    // 按搜索关键词筛选
+    if (currentSearchKeyword) {
+        const keyword = currentSearchKeyword.toLowerCase();
+        filteredFiles = filteredFiles.filter(file => 
+            file.name.toLowerCase().includes(keyword)
+        );
+    }
+    
+    allFiles = filteredFiles;
+    renderFileList();
 }
