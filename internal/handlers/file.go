@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"file-classifier/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -132,6 +133,23 @@ func DownloadHandler(c *gin.Context) {
 	// 强制下载
 	c.Header("Content-Disposition", "attachment; filename="+filepath.Base(absPath))
 	c.File(absPath)
+}
+
+// DeleteFileHandler 删除文件并从所有分类中剔除
+func DeleteFileHandler(c *gin.Context) {
+	var req struct {
+		Path string `json:"path" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "参数错误: " + err.Error()})
+		return
+	}
+	ok, msg := service.DeleteFileFromAllCategories(req.Path)
+	if ok {
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": msg})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": msg})
+	}
 }
 
 // getContentType 根据文件扩展名获取Content-Type

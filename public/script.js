@@ -360,8 +360,7 @@ function renderCategories() {
         } else {
             // 创建正常分类卡片
             const categoryName = position;
-        const stats = currentStats[categoryName] || { count: 0, files: [] };
-            
+            const stats = currentStats[categoryName] || { count: 0, files: [] };
             // 获取分类配置
             let config = CATEGORY_CONFIG[categoryName];
             if (!config) {
@@ -372,22 +371,35 @@ function renderCategories() {
                     description: '自定义分类'
                 };
             }
-        
-        const card = document.createElement('div');
-        card.className = `category-card ${config.color}`;
-        card.innerHTML = `
-            <i class="${config.icon} category-icon"></i>
-            <h3 class="category-title">${categoryName}</h3>
-            <div class="category-count">${stats.count}</div>
-            <p class="category-description">${config.description}</p>
-        `;
-        
-        // 添加点击事件
-        card.addEventListener('click', () => {
-            showFileList(categoryName, stats);
-        });
-        
-        categoriesGrid.appendChild(card);
+            const card = document.createElement('div');
+            card.className = `category-card ${config.color}`;
+            card.innerHTML = `
+                <i class="${config.icon} category-icon"></i>
+                <h3 class="category-title">${categoryName}</h3>
+                <div class="category-count">${stats.count}</div>
+                <p class="category-description">${config.description}</p>
+            `;
+            // 仅自定义分类显示删除按钮
+            if (!CATEGORY_CONFIG[categoryName] && categoryName !== '未分类') {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-category-btn';
+                delBtn.title = '删除分类';
+                delBtn.innerHTML = '<span class="delete-x">×</span>';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    delBtn.classList.add('shake');
+                    setTimeout(() => delBtn.classList.remove('shake'), 400);
+                    if (confirm(`确定要删除分类“${categoryName}”吗？`)) {
+                        deleteCategory(categoryName);
+                    }
+                };
+                card.appendChild(delBtn);
+            }
+            // 添加点击事件
+            card.addEventListener('click', () => {
+                showFileList(categoryName, stats);
+            });
+            categoriesGrid.appendChild(card);
         }
     });
 }
@@ -802,9 +814,29 @@ function createFileRow(file) {
     
     // 操作
     const actionCell = document.createElement('td');
-    actionCell.innerHTML = `<button class="file-table-action" onclick="openFile('${encodeURIComponent(file.path)}', '${file.name}')" title="下载文件">
-        <i class="fas fa-download"></i>
-    </button>`;
+    actionCell.className = 'file-actions-col';
+    actionCell.innerHTML = `
+        <div class="file-action-group">
+            <button class="file-table-action file-download-btn" title="下载文件">
+                <i class="fas fa-download"></i>
+            </button>
+            <button class="file-table-action file-delete-btn" title="删除文件">
+                <span class="delete-x">×</span>
+            </button>
+        </div>
+    `;
+    // 下载按钮事件
+    actionCell.querySelector('.file-download-btn').onclick = (e) => {
+        e.stopPropagation();
+        openFile(encodeURIComponent(file.path), file.name);
+    };
+    // 删除按钮事件
+    actionCell.querySelector('.file-delete-btn').onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`确定要删除文件“${file.name}”吗？`)) {
+            deleteFile(file.path);
+        }
+    };
     row.appendChild(actionCell);
     
     return row;
@@ -891,4 +923,53 @@ function applyFilters() {
     
     allFiles = filteredFiles;
     renderFileList();
+}
+
+// 新增删除分类的API调用
+async function deleteCategory(categoryName) {
+    try {
+        const res = await fetch('/api/delete-category', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoryName })
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('分类删除成功');
+            loadStats();
+        } else {
+            alert(result.error || '删除失败');
+        }
+    } catch (err) {
+        alert('网络错误，删除失败');
+    }
+}
+
+// 新增删除文件API调用
+async function deleteFile(filePath) {
+    try {
+        const res = await fetch('/api/delete-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: filePath })
+        });
+        let result = null;
+        try {
+            result = await res.json();
+        } catch (jsonErr) {
+            alert('服务器响应格式错误');
+            console.error('解析JSON失败', jsonErr);
+            return;
+        }
+        if (result.success) {
+            alert('文件删除成功');
+            loadAllFiles();
+            loadStats();
+        } else {
+            alert(result.error || '删除失败');
+        }
+    } catch (err) {
+        alert('网络连接失败，请检查服务器或刷新页面重试');
+        console.error('删除文件网络错误', err);
+    }
 }

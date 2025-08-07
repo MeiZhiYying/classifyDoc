@@ -1051,7 +1051,8 @@ body {
 }
 
 .file-list-table td {
-    padding: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
     border-bottom: 1px solid #e1e8ed;
     vertical-align: middle;
     font-size: 13px;
@@ -1089,8 +1090,47 @@ body {
 }
 
 .file-actions-col {
-    width: 80px;
+    width: 90px;
     text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+.file-action-group {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+.file-table-action {
+    background: #6c5ce7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.3s;
+}
+.file-table-action .delete-x {
+    font-size: 1.3rem;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    pointer-events: none;
+}
+.file-table-action.file-delete-btn {
+    background: #6c5ce7;
+}
+.file-table-action.file-delete-btn:hover {
+    background: #e11d48;
+}
+.file-table-action.file-download-btn:hover {
+    background: #3b82f6;
 }
 
 /* 文件信息显示样式 */
@@ -1236,3 +1276,60 @@ body {
         justify-content: space-between;
     }
 }
+
+.delete-category-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 0;
+}
+.delete-category-btn .delete-x {
+    color: #222;
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    font-family: 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    transition: color 0.2s;
+}
+.delete-category-btn:hover, .delete-category-btn:active {
+    background: #222;
+}
+.delete-category-btn:hover .delete-x {
+    color: #fff;
+}
+.delete-category-btn.shake {
+    animation: shakeX 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shakeX {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-6px); }
+    40%, 60% { transform: translateX(6px); }
+    100% { transform: none; }
+}
+@media (max-width: 768px) {
+    .delete-category-btn {
+        top: 6px;
+        right: 6px;
+        width: 28px;
+        height: 28px;
+    }
+    .delete-category-btn .delete-x {
+        font-size: 1.2rem;
+    }
+}
+.category-card { position: relative; }

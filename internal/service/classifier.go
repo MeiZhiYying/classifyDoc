@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -57,6 +58,38 @@ func AddFileToCategory(category string, fileInfo models.FileInfo) {
 		stats.Count = len(stats.Files)
 		config.ClassificationStats[category] = stats
 	}
+}
+
+// DeleteFileFromAllCategories 删除物理文件并从所有分类中剔除，更新统计
+func DeleteFileFromAllCategories(relPath string) (bool, string) {
+	fullPath := filepath.Join(config.UploadDir, relPath)
+	// 物理删除文件
+	err := os.Remove(fullPath)
+	if err != nil && !os.IsNotExist(err) {
+		return false, "文件删除失败: " + err.Error()
+	}
+
+	// 从所有分类中剔除该文件
+	config.StatsMutex.Lock()
+	defer config.StatsMutex.Unlock()
+	found := false
+	for cat, stats := range config.ClassificationStats {
+		newFiles := make([]models.FileInfo, 0, len(stats.Files))
+		for _, f := range stats.Files {
+			if f.Path != relPath {
+				newFiles = append(newFiles, f)
+			} else {
+				found = true
+			}
+		}
+		stats.Files = newFiles
+		stats.Count = len(newFiles)
+		config.ClassificationStats[cat] = stats
+	}
+	if !found && err == nil {
+		return false, "文件已不存在，但未在分类中找到记录"
+	}
+	return true, "文件删除成功"
 }
 
 func CheckFiles(c *gin.Context, files []*multipart.FileHeader) {
