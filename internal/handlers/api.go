@@ -327,38 +327,3 @@ func AllFilesHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-
-// DeleteCategoryHandler 删除分类
-func DeleteCategoryHandler(c *gin.Context) {
-	var request struct {
-		CategoryName string `json:"categoryName" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, models.Response{
-			Success: false,
-			Error:   "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
-	if config.IsPredefinedCategory(request.CategoryName) {
-		c.JSON(http.StatusBadRequest, models.Response{
-			Success: false,
-			Error:   "原始分类无法删除",
-		})
-		return
-	}
-
-	ok := config.DeleteCategory(request.CategoryName)
-	if ok {
-		c.JSON(http.StatusOK, models.Response{
-			Success: true,
-			Message: "分类删除成功",
-		})
-	} else {
-		c.JSON(http.StatusBadRequest, models.Response{
-			Success: false,
-			Error:   "分类不存在或无法删除",
-		})
-	}
-}

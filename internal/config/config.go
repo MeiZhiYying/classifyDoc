@@ -79,20 +79,6 @@ func IsPredefinedCategory(categoryName string) bool {
 	return false
 }
 
-// DeleteCategory 删除分类（不能删除原始5个分类）
-func DeleteCategory(categoryName string) bool {
-	if IsPredefinedCategory(categoryName) {
-		return false // 原始分类不能删除
-	}
-	KeywordsMutex.Lock()
-	defer KeywordsMutex.Unlock()
-	StatsMutex.Lock()
-	defer StatsMutex.Unlock()
-	delete(ClassificationKeywords, categoryName)
-	delete(ClassificationStats, categoryName)
-	return true
-}
-
 // Server 服务器配置
 const (
 	DefaultPort  = "3000"

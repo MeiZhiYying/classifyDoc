@@ -1,10 +1,14 @@
 module file-classifier
 
-go 1.21
+go 1.24.1
+
+toolchain go1.24.4
 
 require (
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/google/uuid v1.6.0
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 )
 
 require (

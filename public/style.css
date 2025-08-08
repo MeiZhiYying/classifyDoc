@@ -13,21 +13,21 @@ body {
 }
 
 .container {
-    width: 1800px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px 30px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
     min-height: 100vh;
 }
 
 .header {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     color: #1e293b;
     flex-shrink: 0;
-    padding: 0px 0;
+    padding: 20px 0;
 }
 
 .title {
@@ -249,7 +249,7 @@ body {
 @media (max-width: 768px) {
     .container {
         padding: 15px 10px;
-        gap: 10px;
+        gap: 15px;
     }
     
     .header {
@@ -285,7 +285,7 @@ body {
 @media (max-width: 480px) {
     .container {
         padding: 10px 8px;
-        gap: 8px;
+        gap: 12px;
     }
     
     .header {
@@ -795,18 +795,12 @@ body {
 
 .file-list-header {
     display: flex;
-    flex-direction: column;
-    margin-bottom: 16px;
-    gap: 12px;
-    flex-shrink: 0;
-}
-
-.file-list-title-section {
-    display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 16px;
     flex-wrap: wrap;
     gap: 16px;
+    flex-shrink: 0;
 }
 
 .file-list-title {
@@ -815,101 +809,6 @@ body {
     font-weight: 700;
     color: #1e293b;
     letter-spacing: -0.01em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.file-list-title i {
-    color: #6366f1;
-    font-size: 1.2rem;
-}
-
-.file-count {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #64748b;
-    background: rgba(99, 102, 241, 0.1);
-    padding: 4px 8px;
-    border-radius: 12px;
-    margin-left: 8px;
-}
-
-/* 搜索框样式 */
-.search-box {
-    flex-shrink: 0;
-}
-
-.search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 280px;
-}
-
-.search-input {
-    width: 100%;
-    padding: 10px 40px 10px 36px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    color: #1e293b;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
-}
-
-.search-input:focus {
-    border-color: #6366f1;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.search-input::placeholder {
-    color: #94a3b8;
-    font-weight: 400;
-}
-
-.search-icon {
-    position: absolute;
-    left: 12px;
-    color: #94a3b8;
-    font-size: 14px;
-    pointer-events: none;
-    transition: color 0.3s ease;
-}
-
-.search-input:focus + .search-icon {
-    color: #6366f1;
-}
-
-.clear-search-btn {
-    position: absolute;
-    right: 8px;
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 6px;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-}
-
-.clear-search-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
-
-.clear-search-btn:active {
-    transform: scale(0.95);
 }
 
 .file-list-controls {
@@ -1051,8 +950,7 @@ body {
 }
 
 .file-list-table td {
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding: 10px;
     border-bottom: 1px solid #e1e8ed;
     vertical-align: middle;
     font-size: 13px;
@@ -1090,47 +988,8 @@ body {
 }
 
 .file-actions-col {
-    width: 90px;
+    width: 80px;
     text-align: center;
-    padding-left: 0;
-    padding-right: 0;
-}
-.file-action-group {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    align-items: center;
-}
-.file-table-action {
-    background: #6c5ce7;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    cursor: pointer;
-    font-size: 15px;
-    transition: background 0.3s;
-}
-.file-table-action .delete-x {
-    font-size: 1.3rem;
-    font-weight: bold;
-    line-height: 1;
-    color: #fff;
-    pointer-events: none;
-}
-.file-table-action.file-delete-btn {
-    background: #6c5ce7;
-}
-.file-table-action.file-delete-btn:hover {
-    background: #e11d48;
-}
-.file-table-action.file-download-btn:hover {
-    background: #3b82f6;
 }
 
 /* 文件信息显示样式 */
@@ -1224,20 +1083,13 @@ body {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .file-list-title-section {
+    .file-list-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
-    }
-    
-    .search-input-wrapper {
-        width: 100%;
     }
     
     .file-list-controls {
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
     }
     
     .file-list-table-container {
@@ -1248,73 +1100,3 @@ body {
         min-width: 600px;
     }
 }
-
-@media (max-width: 480px) {
-    .file-list-title {
-        font-size: 1.1rem;
-    }
-    
-    .file-count {
-        font-size: 0.8rem;
-        padding: 3px 6px;
-    }
-    
-    .search-input {
-        padding: 8px 36px 8px 32px;
-        font-size: 13px;
-    }
-    
-    .file-list-controls {
-        gap: 8px;
-    }
-    
-    .filter-control, .sort-controls {
-        width: 100%;
-    }
-    
-    .sort-controls {
-        justify-content: space-between;
-    }
-}
-
-.delete-category-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 2;
-    box-shadow: none;
-    padding: 0;
-}
-.delete-category-btn .delete-x {
-    color: #222;
-    font-size: 2rem;
-    font-weight: bold;
-    line-height: 1;
-    pointer-events: none;
-    user-select: none;
-    font-family: 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    transition: color 0.2s;
-}
-.delete-category-btn:hover .delete-x {
-    color: #e11d48;
-}
-@media (max-width: 768px) {
-    .delete-category-btn {
-        top: 6px;
-        right: 6px;
-        width: 28px;
-        height: 28px;
-    }
-    .delete-category-btn .delete-x {
-        font-size: 1.5rem;
-    }
-}
-.category-card { position: relative; }
