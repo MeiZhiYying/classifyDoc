@@ -170,50 +170,21 @@ func ClassifyByAI(filePath, filename string) string {
 }
 ```
 
+## 删除分类接口
+
+- **接口路径**：`/api/delete-category`
+- **请求方法**：POST
+- **请求参数**：
+  - `categoryName` (string, 必填)：要删除的分类名称
+- **返回值**：
+  - 成功：`{"success": true, "message": "分类删除成功"}`
+  - 失败：`{"success": false, "error": "原始分类无法删除"}` 或 `{"success": false, "error": "分类不存在或无法删除"}`
+- **限制说明**：
+  - 原始5个分类（合同、简历、发票、论文、未分类）无法删除。
+  - 删除后该分类下的文件会在下次扫描时重新归类。
+
 ## 部署
 
 ### 构建生产版本
 
-```bash
-# 构建二进制文件
-make build
-
-# 运行
-./bin/file-classifier
 ```
-
-### Docker 部署
-
-```bash
-# 构建镜像
-make docker-build
-
-# 运行容器
-make docker-run
-```
-
-## 注意事项
-
-- 支持的最大文件数量：200个
-- 单个文件大小限制：100MB
-- 支持的文件类型：所有类型
-- AI分析功能当前为占位符实现
-
-## 后续扩展
-
-- [ ] 接入真实AI大模型服务
-- [ ] 添加更多文件分类
-- [ ] 支持文件内容预览
-- [ ] 添加用户自定义分类
-- [ ] 实现文件搜索功能
-- [ ] 支持批量导出分类结果
-- [ ] 添加用户权限管理
-- [ ] 实现分类规则学习
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request 来改进项目。
-
-## 许可证
-
-MIT License
