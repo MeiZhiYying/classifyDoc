@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能分类 - 文件分类系统</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('app_theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -14,6 +22,46 @@
                 <i class="fas fa-brain"></i>
                 智能文档分类系统
             </h1>
+            <div class="header-actions">
+                <div class="settings">
+                    <button id="settingsButton" class="settings-btn" aria-haspopup="true" aria-expanded="false" title="设置">
+                        <i class="fas fa-gear"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settingsDropdown" aria-label="设置" hidden>
+                        <div class="settings-group">
+                            <div class="settings-group-title">主题</div>
+                            <label class="radio">
+                                <input type="radio" name="theme" value="light" id="themeLight" checked>
+                                <span>浅色（默认）</span>
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="theme" value="dark" id="themeDark">
+                                <span>深色</span>
+                            </label>
+                        </div>
+                        <div class="settings-group" style="margin-top:10px;">
+                            <div class="settings-group-title">常用</div>
+                            <label class="switch">
+                                <input type="checkbox" id="autoScanToggle">
+                                <span>启动时自动扫描 uploads</span>
+                            </label>
+                            <div class="hint" style="font-size:12px;color:#64748b;">更多设置可后续扩展</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="account">
+                    <button id="accountButton" class="account-btn" aria-haspopup="true" aria-expanded="false" title="账户">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="account-dropdown" id="accountDropdown" hidden>
+                        <div class="account-info" id="accountInfo">未登录</div>
+                        <div class="account-actions">
+                            <button class="account-action" id="loginOpenBtn">登录</button>
+                            <button class="account-action" id="logoutBtn" hidden>退出登录</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="upload-section">
@@ -123,6 +171,32 @@
             </div>
         </div>
         <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+        <!-- 登录模态框 -->
+        <div class="auth-modal" id="authModal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>用户登录</h3>
+                    <button class="close-btn" id="authCloseBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="loginUsername">用户名</label>
+                        <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">密码</label>
+                        <input type="password" id="loginPassword" placeholder="请输入密码（演示为 admin）" required>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-cancel" id="authCancelBtn">取消</button>
+                        <button class="btn-confirm" id="authSubmitBtn">登录</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>

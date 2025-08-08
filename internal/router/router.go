@@ -31,6 +31,15 @@ func SetupRouter() *gin.Engine {
 		api.POST("/scan-uploads", handlers.ScanUploadsHandler)
 		api.POST("/add-category", handlers.AddCategoryHandler)
 		api.GET("/categories", handlers.GetCategoriesHandler)
+
+		// 鉴权相关
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", handlers.RegisterHandler)
+			auth.POST("/login", handlers.LoginHandler)
+			auth.GET("/me", handlers.MeHandler)
+			auth.POST("/logout", handlers.LogoutHandler)
+		}
 	}
 
 	// 文件上传路由

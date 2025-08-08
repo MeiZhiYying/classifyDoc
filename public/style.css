@@ -1100,3 +1100,83 @@ body {
         min-width: 600px;
     }
 }
+
+/* ===== 设置与主题切换样式 ===== */
+.header { position: relative; }
+.header-actions { position: absolute; right: 20px; top: 12px; display: flex; align-items: center; gap: 12px; pointer-events: none; }
+.settings { position: relative; }
+.account { position: relative; }
+.settings-btn { border: 2px solid #e2e8f0; background: rgba(255,255,255,0.9); color: #64748b; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: all .2s ease; pointer-events: auto; }
+.settings-btn:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-1px); }
+.settings-dropdown { position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px; background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(0,0,0,0.12); border-radius: 12px; padding: 12px; z-index: 1200; text-align: left; pointer-events: auto; }
+.settings-group { display: flex; flex-direction: column; gap: 8px; }
+.settings-group-title { font-weight: 600; font-size: 13px; color: #334155; margin-bottom: 4px; }
+.radio { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #475569; font-size: 14px; }
+.radio input[type="radio"] { accent-color: #3b82f6; }
+.switch { display:flex; align-items:center; gap:8px; color:#475569; font-size:14px; cursor:pointer; }
+
+.account-btn { border: 2px solid #e2e8f0; background: rgba(255,255,255,0.9); color: #64748b; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: all .2s ease; pointer-events: auto; }
+.account-btn:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-1px); }
+.account-dropdown { position: absolute; top: calc(100% + 8px); right: 0; min-width: 220px; background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(0,0,0,0.12); border-radius: 12px; padding: 12px; z-index: 1200; text-align: left; pointer-events: auto; }
+.account-info { font-size: 14px; color: #334155; margin-bottom: 8px; }
+.account-actions { display:flex; gap:8px; }
+.account-action { flex:1; padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; transition:all .2s ease; }
+.account-action:hover { color:#3b82f6; border-color:#3b82f6; }
+
+/* ===== 深色主题覆盖 ===== */
+html[data-theme='dark'] body { background: linear-gradient(135deg, #0b1220 0%, #0e1628 100%); color: #e2e8f0; }
+html[data-theme='dark'] .header { color: #e2e8f0; }
+html[data-theme='dark'] .title { background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+html[data-theme='dark'] .upload-area { background: rgba(17,24,39,0.85); border-color: #273449; box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+html[data-theme='dark'] .upload-area:hover { background: rgba(59,130,246,0.10); box-shadow: 0 20px 60px rgba(59,130,246,0.25); }
+html[data-theme='dark'] .upload-icon { background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+html[data-theme='dark'] .upload-text { color: #e2e8f0; }
+html[data-theme='dark'] .upload-hint { color: #94a3b8; }
+html[data-theme='dark'] .upload-progress { background: #0f172a; box-shadow: 0 20px 40px rgba(0,0,0,0.55); }
+html[data-theme='dark'] .progress-bar { background: #273449; }
+html[data-theme='dark'] .progress-text { color: #94a3b8; }
+
+html[data-theme='dark'] .categories-grid { background: rgba(17,24,39,0.85); border-color: rgba(148,163,184,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+html[data-theme='dark'] .category-title { color: #e2e8f0; }
+html[data-theme='dark'] .category-description { color: #94a3b8; }
+
+html[data-theme='dark'] .modal-content { background: #111827; border-color: rgba(148,163,184,0.15); box-shadow: 0 25px 80px rgba(0,0,0,0.55); }
+html[data-theme='dark'] .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+html[data-theme='dark'] .modal-body { background: #0f172a; }
+html[data-theme='dark'] .file-item { background: #0f172a; border-color: #273449; }
+html[data-theme='dark'] .file-item:hover { background: rgba(148,163,184,0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
+html[data-theme='dark'] .file-icon { background: #111827; color: #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+html[data-theme='dark'] .file-name { color: #e2e8f0; }
+html[data-theme='dark'] .file-meta { color: #94a3b8; }
+
+html[data-theme='dark'] .file-list-section { background: rgba(17,24,39,0.85); border-color: rgba(148,163,184,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+html[data-theme='dark'] .file-list-title { color: #e2e8f0; }
+html[data-theme='dark'] .filter-control label { color: #94a3b8; }
+html[data-theme='dark'] .filter-control select { background: rgba(17,24,39,0.85); color: #e2e8f0; border-color: #273449; }
+html[data-theme='dark'] .filter-control select:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.25); }
+html[data-theme='dark'] .sort-btn { background: rgba(17,24,39,0.85); color: #94a3b8; border-color: #273449; }
+html[data-theme='dark'] .sort-btn:hover { color: #60a5fa; border-color: #60a5fa; }
+html[data-theme='dark'] .sort-btn.active { background: #3b82f6; border-color: #3b82f6; color: #ffffff; }
+
+html[data-theme='dark'] .file-list-table-container { border-color: #273449; }
+html[data-theme='dark'] .file-list-table { background: #111827; }
+html[data-theme='dark'] .file-list-table th { background: #0f172a; color: #e2e8f0; border-bottom-color: #273449; }
+html[data-theme='dark'] .file-list-table td { border-bottom-color: #273449; }
+html[data-theme='dark'] .file-list-table tbody tr:hover { background: rgba(148,163,184,0.15); }
+html[data-theme='dark'] .file-table-name { color: #e2e8f0; }
+html[data-theme='dark'] .file-table-size, html[data-theme='dark'] .file-table-time { color: #94a3b8; }
+html[data-theme='dark'] .no-files-message { color: #94a3b8; }
+
+/* 深色主题下的设置面板 */
+html[data-theme='dark'] .settings-btn { background: rgba(17,24,39,0.85); color: #94a3b8; border-color: #273449; }
+html[data-theme='dark'] .settings-btn:hover { color: #60a5fa; border-color: #60a5fa; }
+html[data-theme='dark'] .settings-dropdown { background: #111827; color: #e2e8f0; border-color: #273449; box-shadow: 0 18px 40px rgba(0,0,0,0.6); }
+html[data-theme='dark'] .settings-group-title { color: #e2e8f0; }
+html[data-theme='dark'] .radio { color: #cbd5e1; }
+html[data-theme='dark'] .account-btn { background: rgba(17,24,39,0.85); color: #94a3b8; border-color: #273449; }
+html[data-theme='dark'] .account-btn:hover { color: #60a5fa; border-color: #60a5fa; }
+html[data-theme='dark'] .account-dropdown { background: #111827; color:#e2e8f0; border-color:#273449; box-shadow: 0 18px 40px rgba(0,0,0,0.6); }
+
+/* 登录模态框通用复用文件列表模态框样式 */
+.auth-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1100; display:none; align-items:center; justify-content:center; }
+.auth-modal.show { display:flex; }

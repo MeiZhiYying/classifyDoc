@@ -61,7 +61,15 @@ const usernameInput = document.getElementById('username');
 document.addEventListener('DOMContentLoaded', function() {
     initializeUpload();
     initializeFileList();
-    autoScanUploads();
+    initializeTheme();
+    initializeAuthUI();
+    initializeCommonSettings();
+    registerGlobalDismiss();
+    // 先渲染一次默认分类，保证首屏就可见
+    try { renderCategories(); } catch (e) { console.warn('首屏分类渲染失败(忽略):', e); }
+    if (shouldAutoScanUploads()) {
+        autoScanUploads();
+    }
 });
 
 // 自动扫描uploads文件夹
@@ -595,8 +603,296 @@ document.addEventListener('keydown', (e) => {
         if (document.getElementById('addCategoryModal').style.display === 'flex') {
             closeAddCategoryModal();
         }
+        const settingsDropdown = document.getElementById('settingsDropdown');
+        if (settingsDropdown && !settingsDropdown.hidden) {
+            hideSettings();
+        }
+        const accountDropdown = document.getElementById('accountDropdown');
+        if (accountDropdown && !accountDropdown.hidden) {
+            hideAccount();
+        }
+        const authModal = document.getElementById('authModal');
+        if (authModal && authModal.style.display === 'flex') {
+            closeAuthModal();
+        }
     }
 });
+
+// === 主题设置 ===
+function initializeTheme() {
+    const settingsButton = document.getElementById('settingsButton');
+    const settingsDropdown = document.getElementById('settingsDropdown');
+    const themeLight = document.getElementById('themeLight');
+    const themeDark = document.getElementById('themeDark');
+
+    if (!settingsButton || !settingsDropdown || !themeLight || !themeDark) {
+        return;
+    }
+
+    // 加载主题
+    const savedTheme = getSavedTheme();
+    applyTheme(savedTheme || 'light');
+    if (savedTheme === 'dark') {
+        themeDark.checked = true;
+    } else {
+        themeLight.checked = true;
+    }
+
+    // 切换设置面板（回退到简单显示/隐藏，不改动布局）
+    settingsButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 打开设置前，确保关闭账户下拉，避免重叠
+        hideAccount();
+        const expanded = settingsButton.getAttribute('aria-expanded') === 'true';
+        const dropdown = document.getElementById('settingsDropdown');
+        if (!dropdown) return;
+        dropdown.hidden = expanded;
+        settingsButton.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    });
+
+    // 点击外部关闭
+    document.addEventListener('click', (e) => {
+        if (!settingsDropdown.hidden && !settingsDropdown.contains(e.target) && e.target !== settingsButton) {
+            hideSettings();
+        }
+    });
+
+    // 主题选择
+    themeLight.addEventListener('change', () => setTheme('light'));
+    themeDark.addEventListener('change', () => setTheme('dark'));
+}
+
+function setTheme(theme) {
+    applyTheme(theme);
+    saveTheme(theme);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+}
+
+function saveTheme(theme) {
+    try {
+        localStorage.setItem('app_theme', theme);
+    } catch (e) {}
+}
+
+function getSavedTheme() {
+    try {
+        return localStorage.getItem('app_theme');
+    } catch (e) { return null; }
+}
+
+function showSettings() {
+    const dropdown = document.getElementById('settingsDropdown');
+    const btn = document.getElementById('settingsButton');
+    if (dropdown && btn) {
+        dropdown.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+    }
+}
+
+function hideSettings() {
+    const dropdown = document.getElementById('settingsDropdown');
+    const btn = document.getElementById('settingsButton');
+    if (dropdown && btn) {
+        dropdown.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+    }
+}
+
+// === 账户/鉴权 ===
+function initializeAuthUI() {
+    const accountButton = document.getElementById('accountButton');
+    const accountDropdown = document.getElementById('accountDropdown');
+    const loginOpenBtn = document.getElementById('loginOpenBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (!accountButton || !accountDropdown) return;
+
+    // 首次查询登录状态
+    refreshAuthState();
+
+    accountButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 打开账户前，确保关闭设置下拉，避免重叠
+        hideSettings();
+        const expanded = accountButton.getAttribute('aria-expanded') === 'true';
+        const dropdown = document.getElementById('accountDropdown');
+        if (!dropdown) return;
+        dropdown.hidden = expanded;
+        accountButton.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!accountDropdown.hidden && !accountDropdown.contains(e.target) && e.target !== accountButton) {
+            hideAccount();
+        }
+    });
+
+    if (loginOpenBtn) {
+        loginOpenBtn.addEventListener('click', () => {
+            hideAccount();
+            openAuthModal();
+        });
+    }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            refreshAuthState();
+        });
+    }
+
+    // 登录模态事件
+    const authModal = document.getElementById('authModal');
+    const authCloseBtn = document.getElementById('authCloseBtn');
+    const authCancelBtn = document.getElementById('authCancelBtn');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    authCloseBtn && authCloseBtn.addEventListener('click', closeAuthModal);
+    authCancelBtn && authCancelBtn.addEventListener('click', closeAuthModal);
+    authSubmitBtn && authSubmitBtn.addEventListener('click', submitLogin);
+
+    // 在登录模态内支持“注册/登录”切换：按回车登录
+    const loginPassword = document.getElementById('loginPassword');
+    loginPassword && loginPassword.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitLogin();
+    });
+
+    function submitLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        if (!username || !password) {
+            alert('请输入用户名和密码');
+            return;
+        }
+        const doLogin = () => fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        }).then(async res => {
+            if (!res.ok) {
+                const t = await res.json().catch(() => ({}));
+                throw new Error(t.error || '登录失败');
+            }
+            return res.json();
+        }).then(() => {
+            closeAuthModal();
+            refreshAuthState();
+        });
+
+        // 先尝试注册（若用户不存在则注册），再登录
+        fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        }).finally(() => {
+            doLogin().catch(err => alert(err.message || '登录失败'))
+        });
+    }
+
+    function openAuthModal() {
+        if (authModal) {
+            authModal.style.display = 'flex';
+            authModal.classList.add('show');
+        }
+    }
+    function closeAuthModal() {
+        if (authModal) {
+            authModal.style.display = 'none';
+            authModal.classList.remove('show');
+        }
+    }
+    // 暴露给 Esc 关闭
+    window.closeAuthModal = closeAuthModal;
+    window.openAuthModal = openAuthModal;
+}
+
+function showAccount() {
+    const dropdown = document.getElementById('accountDropdown');
+    const btn = document.getElementById('accountButton');
+    if (dropdown && btn) {
+        dropdown.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+    }
+}
+function hideAccount() {
+    const dropdown = document.getElementById('accountDropdown');
+    const btn = document.getElementById('accountButton');
+    if (dropdown && btn) {
+        dropdown.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+    }
+}
+
+async function refreshAuthState() {
+    try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        const info = document.getElementById('accountInfo');
+        const loginBtn = document.getElementById('loginOpenBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (data.authenticated) {
+            info.textContent = `已登录：${data.user.username}`;
+            loginBtn.hidden = true;
+            logoutBtn.hidden = false;
+        } else {
+            info.textContent = '未登录';
+            loginBtn.hidden = false;
+            logoutBtn.hidden = true;
+        }
+    } catch (e) {
+        // 忽略错误
+    }
+}
+
+// 常用设置：是否启动时自动扫描 uploads
+function initializeCommonSettings() {
+    const toggle = document.getElementById('autoScanToggle');
+    if (!toggle) return;
+    const key = 'setting_auto_scan_uploads';
+    try {
+        const saved = localStorage.getItem(key);
+        if (saved !== null) {
+            toggle.checked = saved === '1';
+        } else {
+            toggle.checked = true; // 默认开启
+            localStorage.setItem(key, '1');
+        }
+    } catch (e) {}
+
+    toggle.addEventListener('change', () => {
+        try {
+            localStorage.setItem(key, toggle.checked ? '1' : '0');
+        } catch (e) {}
+    });
+}
+
+function shouldAutoScanUploads() {
+    try {
+        const v = localStorage.getItem('setting_auto_scan_uploads');
+        return v === null || v === '1';
+    } catch (e) { return true; }
+}
+
+// 全局点击空白关闭所有下拉
+function registerGlobalDismiss() {
+    document.addEventListener('click', (e) => {
+        const settingsDropdown = document.getElementById('settingsDropdown');
+        const settingsButton = document.getElementById('settingsButton');
+        const accountDropdown = document.getElementById('accountDropdown');
+        const accountButton = document.getElementById('accountButton');
+
+        const clickInSettings = settingsDropdown && (settingsDropdown.contains(e.target) || (settingsButton && settingsButton.contains(e.target)));
+        const clickInAccount = accountDropdown && (accountDropdown.contains(e.target) || (accountButton && accountButton.contains(e.target)));
+
+        if (!clickInSettings) {
+            hideSettings();
+        }
+        if (!clickInAccount) {
+            hideAccount();
+        }
+    });
+}
 
 // === 文件列表功能 ===
 
