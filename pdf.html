@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF文件对比工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 2;
+        }
+
+        @media (min-width: 992px) {
+            .pdf-container {
+                flex-direction: row;
+            }
+        }
+
+        .pdf-wrapper {
+            flex: 1;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            position: relative;
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .pdf-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .clear-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            position: absolute;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #f9f9f9;
+            z-index: 10;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .upload-icon {
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            margin-bottom: 25px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .browse-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+            position: relative;
+            z-index: 15;
+        }
+
+        .browse-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .pdf-viewer {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 48px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .page-wrapper {
+            position: relative;
+            margin: 20px auto;
+            width: fit-content;
+        }
+
+        .pdf-viewer canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 差异显示面板 */
+        .diff-panel {
+            flex: 0 0 400px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .diff-header {
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .diff-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .diff-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .diff-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .diff-card.modified {
+            border-left: 4px solid #f39c12;
+        }
+
+        .diff-card.added {
+            border-left: 4px solid #27ae60;
+        }
+
+        .diff-card.deleted {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .diff-card-header {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .diff-type-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .diff-type-badge.modified {
+            background-color: #f39c12;
+        }
+
+        .diff-type-badge.added {
+            background-color: #27ae60;
+        }
+
+        .diff-type-badge.deleted {
+            background-color: #e74c3c;
+        }
+
+        .diff-text {
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .diff-text-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .diff-content-text {
+            background-color: #e9ecef;
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .diff-content-text.collapsed {
+            max-height: 40px;
+            overflow: hidden;
+        }
+
+        .diff-content-text.expanded {
+            max-height: none;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            text-decoration: underline;
+        }
+
+        .expand-btn:hover {
+            color: #0056b3;
+        }
+
+        .diff-original {
+            background-color: #ffeaa7;
+        }
+
+        .diff-modified {
+            background-color: #74b9ff;
+            color: white;
+        }
+
+        .diff-added {
+            background-color: #00b894;
+            color: white;
+        }
+
+        .diff-deleted {
+            background-color: #e17055;
+            color: white;
+        }
+
+        .diff-location {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+
+        .diff-change {
+            font-family: monospace;
+            font-size: 0.9rem;
+            background-color: #e9ecef;
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+
+        .action-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .compare-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .compare-btn:hover {
+            background-color: #219653;
+        }
+
+        .highlight-left {
+            background-color: rgba(231, 76, 60, 0.3);
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .highlight-right {
+            background-color: rgba(46, 204, 113, 0.3);
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            background: #34495e;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area.dragover {
+            background-color: #edf7fd;
+            border: 2px dashed #3498db;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF文件对比工具</h1>
+        </header>
+        <div class="main-container">
+            <div class="pdf-container">
+                <div class="pdf-wrapper left">
+                    <div class="pdf-header">
+                        <div class="pdf-title">文档 1</div>
+                        <button id="clear-btn-1" class="clear-btn">清除</button>
+                    </div>
+                    <div class="upload-area" id="upload-area-1">
+                        <div class="upload-icon">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            将文档拖放到此处<br>
+                            <small>支持PDF文件</small>
+                        </div>
+                        <input type="file" id="pdf-file-1" accept=".pdf" class="file-input">
+                        <label for="pdf-file-1" class="browse-btn" id="browse-btn-1">浏览文件</label>
+                    </div>
+                    <div id="pdf-viewer-1" class="pdf-viewer"></div>
+                </div>
+                <div class="pdf-wrapper right">
+                    <div class="pdf-header">
+                        <div class="pdf-title">文档 2</div>
+                        <button id="clear-btn-2" class="clear-btn">清除</button>
+                    </div>
+                    <div class="upload-area" id="upload-area-2">
+                        <div class="upload-icon">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            将文档拖放到此处<br>
+                            <small>支持PDF文件</small>
+                        </div>
+                        <input type="file" id="pdf-file-2" accept=".pdf" class="file-input">
+                        <label for="pdf-file-2" class="browse-btn" id="browse-btn-2">浏览文件</label>
+                    </div>
+                    <div id="pdf-viewer-2" class="pdf-viewer"></div>
+                </div>
+            </div>
+            
+            <!-- 新增差异显示面板 -->
+            <div class="diff-panel">
+                <div class="diff-header">
+                    <div class="diff-title">差异详情</div>
+                </div>
+                <div class="diff-content" id="diff-content">
+                    <div class="empty-state">
+                        请上传两个PDF文件并点击"查找差异"按钮
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-container">
+            <button id="compare-btn" class="action-btn compare-btn">查找差异</button>
+        </div>
+    </div>
+
+    <div id="status" class="status" style="display: none;"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"></script>
+    <script>
+// 设置worker路径
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
+
+// 状态显示函数
+function showStatus(message) {
+    const status = document.getElementById('status');
+    status.textContent = message;
+    status.style.display = 'block';
+    
+    // 5秒后自动隐藏
+    setTimeout(() => {
+        status.style.display = 'none';
+    }, 5000);
+}
+
+// 工具函数
+function debounce(func, delay) {
+    let timeout;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+// 全局变量
+let pdf1 = null;
+let pdf2 = null;
+let pdf1TextBlocks = [];
+let pdf2TextBlocks = [];
+let pdf1ProcessedBlocks = []; 
+let pdf2ProcessedBlocks = []; 
+let pdf1PageCount = 0;
+let pdf2PageCount = 0;
+let highlightOverlays = [];
+let scaleFactors = { pdf1: {}, pdf2: {} }; // 存储每页的缩放比例
+
+// 新增：按顺序存储差异数据
+let sortedDifferences = [];
+
+// DOM元素
+const pdf1Input = document.getElementById('pdf-file-1');
+const pdf2Input = document.getElementById('pdf-file-2');
+const pdf1Viewer = document.getElementById('pdf-viewer-1');
+const pdf2Viewer = document.getElementById('pdf-viewer-2');
+const compareBtn = document.getElementById('compare-btn');
+const uploadArea1 = document.getElementById('upload-area-1');
+const uploadArea2 = document.getElementById('upload-area-2');
+const clearBtn1 = document.getElementById('clear-btn-1');
+const clearBtn2 = document.getElementById('clear-btn-2');
+const diffContent = document.getElementById('diff-content');
+
+// 页面加载完成时初始化
+document.addEventListener('DOMContentLoaded', () => {
+    showStatus('页面已加载，初始化完成');
+    
+    // 设置文件输入
+    pdf1Input.addEventListener('change', (e) => {
+        showStatus('正在处理文件1...');
+        handleFileSelect(e, 1);
+    });
+    
+    pdf2Input.addEventListener('change', (e) => {
+        showStatus('正在处理文件2...');
+        handleFileSelect(e, 2);
+    });
+
+    // 设置比较按钮
+    compareBtn.addEventListener('click', () => {
+        showStatus('开始比较PDF文件...');
+        comparePDFs();
+    });
+
+    // 设置拖放功能
+    setupDragAndDrop(uploadArea1, pdf1Input, 1);
+    setupDragAndDrop(uploadArea2, pdf2Input, 2);
+    
+    // 设置清除按钮
+    clearBtn1.addEventListener('click', () => clearPDF(1));
+    clearBtn2.addEventListener('click', () => clearPDF(2));
+    
+    showStatus('事件监听器已设置');
+});
+
+// 设置拖放功能
+function setupDragAndDrop(area, input, pdfNum) {
+    area.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        area.classList.add('dragover');
+    });
+    
+    area.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        area.classList.remove('dragover');
+    });
+    
+    area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        area.classList.remove('dragover');
+        
+        if (e.dataTransfer.files.length > 0) {
+            input.files = e.dataTransfer.files;
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
+        }
+    });
+}
+
+// 清除PDF文件
+function clearPDF(pdfNum) {
+    clearHighlights();
+    clearDiffResults();
+    
+    if (pdfNum === 1) {
+        pdf1 = null;
+        pdf1TextBlocks = [];
+        pdf1ProcessedBlocks = []; 
+        pdf1PageCount = 0;
+        pdf1Viewer.innerHTML = '';
+        uploadArea1.style.display = 'flex';
+        pdf1Input.value = '';
+        scaleFactors.pdf1 = {};
+    } else {
+        pdf2 = null;
+        pdf2TextBlocks = [];
+        pdf2ProcessedBlocks = []; 
+        pdf2PageCount = 0;
+        pdf2Viewer.innerHTML = '';
+        uploadArea2.style.display = 'flex';
+        pdf2Input.value = '';
+        scaleFactors.pdf2 = {};
+    }
+    
+    showStatus(`已清除PDF ${pdfNum}。`);
+}
+
+// 处理文件选择
+async function handleFileSelect(e, pdfNum) {
+    const file = e.target.files[0];
+    if (!file || file.type !== 'application/pdf') {
+        alert('请选择有效的PDF文件。');
+        return;
+    }
+    
+    showStatus(`正在读取PDF ${pdfNum}...`);
+    
+    const fileReader = new FileReader();
+    
+    fileReader.onload = async function(event) {
+        const arrayBuffer = event.target.result;
+        try {
+            if (pdfNum === 1) {
+                pdf1 = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                pdf1PageCount = pdf1.numPages;
+                showStatus(`PDF 1 已加载: ${pdf1PageCount} 页，正在渲染...`);
+                
+                await renderPDF(pdf1, pdf1Viewer, 1);
+                showStatus(`PDF 1 渲染完成，正在提取文本...`);
+                
+                pdf1TextBlocks = await extractTextBlocks(pdf1);
+                pdf1ProcessedBlocks = processTextBlocks(pdf1TextBlocks);
+                showStatus(`PDF 1 文本提取完成，提取了 ${pdf1TextBlocks.length} 页文本块`);
+                
+                uploadArea1.style.display = 'none';
+            } else {
+                pdf2 = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                pdf2PageCount = pdf2.numPages;
+                showStatus(`PDF 2 已加载: ${pdf2PageCount} 页，正在渲染...`);
+                
+                await renderPDF(pdf2, pdf2Viewer, 2);
+                showStatus(`PDF 2 渲染完成，正在提取文本...`);
+                
+                pdf2TextBlocks = await extractTextBlocks(pdf2);
+                pdf2ProcessedBlocks = processTextBlocks(pdf2TextBlocks);
+                showStatus(`PDF 2 文本提取完成，提取了 ${pdf2TextBlocks.length} 页文本块`);
+                
+                uploadArea2.style.display = 'none';
+            }
+        } catch (error) {
+            showStatus(`加载PDF时出错: ${error.message}`);
+            alert('加载PDF时出错: ' + error.message);
+        }
+    };
+    
+    fileReader.readAsArrayBuffer(file);
+}
+
+// 渲染PDF，适应容器大小
+async function renderPDF(pdf, container, pdfNum) {
+    container.innerHTML = '';
+    
+    // 获取容器的宽度
+    const containerWidth = container.clientWidth - 40; // 减去内边距
+    
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const originalViewport = page.getViewport({ scale: 1 });
+        
+        // 计算适合容器的缩放比例
+        const scale = containerWidth / originalViewport.width;
+        const viewport = page.getViewport({ scale });
+        
+        // 保存缩放因子，用于高亮定位
+        if (pdfNum === 1) {
+            scaleFactors.pdf1[pageNum] = scale;
+        } else {
+            scaleFactors.pdf2[pageNum] = scale;
+        }
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'page-wrapper';
+        wrapper.dataset.page = pageNum;
+        wrapper.dataset.pdf = pdfNum;
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        wrapper.appendChild(canvas);
+        container.appendChild(wrapper);
+        
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+    }
+}
+
+// 从PDF提取文本块，考虑缩放
+async function extractTextBlocks(pdf) {
+    const allTextBlocks = [];
+    
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const scale = pdf === pdf1 ? scaleFactors.pdf1[pageNum] : scaleFactors.pdf2[pageNum];
+        const viewport = page.getViewport({ scale });
+        
+        const pageTextBlocks = [];
+        
+        textContent.items.forEach((item, index) => {
+            const tx = pdfjsLib.Util.transform(
+                viewport.transform,
+                item.transform
+            );
+            
+            const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+            
+            const block = {
+                text: item.str,
+                x: tx[4],
+                y: tx[5],
+                width: item.width * scale,
+                height: fontHeight,
+                transform: tx,
+                page: pageNum,
+                blockIndex: index,
+                fontName: item.fontName
+            };
+            
+            pageTextBlocks.push(block);
+        });
+        
+        allTextBlocks.push({
+            page: pageNum,
+            blocks: pageTextBlocks,
+            viewport: {
+                width: viewport.width,
+                height: viewport.height
+            }
+        });
+    }
+    
+    return allTextBlocks;
+}
+
+// 处理文本块，为每个文本块增加唯一标识和索引
+function processTextBlocks(pageBlocks) {
+    const processedBlocks = [];
+    
+    // 为每个页面的每个块添加全局唯一ID和索引
+    pageBlocks.forEach((page, pageIndex) => {
+        page.blocks.forEach((block, blockIndex) => {
+            const blockId = `${page.page}.${blockIndex}`;
+            const processedBlock = {
+                ...block,
+                blockId: blockId,
+                pageIndex: pageIndex,
+                blockIndex: blockIndex,
+                references: [blockId] // 记录这个块包含的原始块引用
+            };
+            processedBlocks.push(processedBlock);
+        });
+    });
+    
+    return processedBlocks;
+}
+
+// 合并所有文本块的内容并打印，删除开头和结尾的空格以及U+F0B7字符
+function mergeAllTextBlocks(processedBlocks) {
+    let fullText = "";
+    const blockPositions = []; // 存储每个原始文本块在合并文本中的起始和结束位置
+    
+    // 按页和块索引排序处理块
+    const sortedBlocks = [...processedBlocks].sort((a, b) => {
+        if (a.page !== b.page) {
+            return a.page - b.page;
+        }
+        return a.blockIndex - b.blockIndex;
+    });
+    
+    sortedBlocks.forEach(block => {
+        // 检查文本块是否只包含空格，如果是则跳过
+        if (block.text.trim() === '') {
+            return; // 跳过此块
+        }
+        
+        const startPos = fullText.length;
+        
+        // 删除文本块开头和结尾的空格以及U+F0B7字符，保留中间的空格
+        let processedText = block.text;
+        
+        // 删除开头的空格和U+F0B7字符
+        processedText = processedText.replace(/^[\s\uF0B7]+/, '');
+        
+        // 删除结尾的空格
+        processedText = processedText.replace(/\s+$/, '');
+        
+        fullText += processedText;
+        const endPos = fullText.length;
+        
+        blockPositions.push({
+            blockId: block.blockId,
+            block: block,
+            startPos: startPos,
+            endPos: endPos,
+            text: processedText, // 存储处理后的文本
+            originalText: block.text // 保存原始文本，以便需要时使用
+        });
+    });
+    
+    return { fullText, blockPositions };
+}
+
+// 根据标点符号重新分割文本成句子
+function splitTextIntoSentences(fullText) {
+    // 匹配所有常见标点符号作为分隔符
+    const punctuationRegex = /([，,。.；;:：、\/？?！!])/g;
+    let sentences = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = punctuationRegex.exec(fullText)) !== null) {
+        const splitPosition = match.index + 1; // 包含标点符号
+        
+        if (splitPosition > lastIndex) {
+            const sentence = fullText.substring(lastIndex, splitPosition);
+            if (sentence.trim()) { // 确保句子不是空的
+                sentences.push({
+                    text: sentence,
+                    startPos: lastIndex,
+                    endPos: splitPosition
+                });
+            }
+            lastIndex = splitPosition;
+        }
+    }
+    
+    // 处理文本末尾没有标点符号的情况
+    if (lastIndex < fullText.length) {
+        const sentence = fullText.substring(lastIndex);
+        if (sentence.trim()) {
+            sentences.push({
+                text: sentence,
+                startPos: lastIndex,
+                endPos: fullText.length
+            });
+        }
+    }
+    
+    return sentences;
+}
+
+// 为每个句子标记它包含的原始文本块
+function mapSentencesToOriginalBlocks(sentences, blockPositions) {
+    const mappedSentences = sentences.map((sentence, idx) => {
+        // 找出与当前句子有重叠的所有原始文本块
+        const containedBlocks = blockPositions.filter(block => {
+            // 检查块和句子是否有重叠
+            return !(block.endPos <= sentence.startPos || block.startPos >= sentence.endPos);
+        });
+        
+        // 提取块ID和块对象
+        const containedBlockIds = containedBlocks.map(block => block.blockId);
+        const originalBlocks = containedBlocks.map(block => block.block);
+        
+        return {
+            ...sentence,
+            sentenceIndex: idx,
+            containedBlockIds: containedBlockIds,
+            originalBlocks: originalBlocks
+        };
+    });
+    
+    return mappedSentences;
+}
+
+// 新增：计算两个字符串的相似度（使用编辑距离）
+function calculateSimilarity(str1, str2) {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    if (len1 === 0) return len2 === 0 ? 1 : 0;
+    if (len2 === 0) return 0;
+    
+    // 动态规划计算编辑距离
+    const matrix = Array(len1 + 1).fill().map(() => Array(len2 + 1).fill(0));
+    
+    for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+    
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,      // 删除
+                matrix[i][j - 1] + 1,      // 插入
+                matrix[i - 1][j - 1] + cost // 替换
+            );
+        }
+    }
+    
+    const editDistance = matrix[len1][len2];
+    const maxLen = Math.max(len1, len2);
+    return 1 - editDistance / maxLen;
+}
+
+// 新增：提取关键差异信息（改进版本）
+function extractKeyDifferences(str1, str2) {
+    // 数字提取
+    const numberRegex = /\d+/g;
+    const numbers1 = str1.match(numberRegex) || [];
+    const numbers2 = str2.match(numberRegex) || [];
+    
+    // 找出数字变化
+    if (numbers1.length > 0 || numbers2.length > 0) {
+        // 简单情况：一个数字变成另一个数字
+        if (numbers1.length === 1 && numbers2.length === 1 && numbers1[0] !== numbers2[0]) {
+            return {
+                original: numbers1[0],
+                modified: numbers2[0]
+            };
+        }
+        
+        // 复杂情况：多个数字或数字个数不同
+        if (numbers1.length !== numbers2.length) {
+            return {
+                original: numbers1.join(', ') || '无',
+                modified: numbers2.join(', ') || '无'
+            };
+        }
+    }
+    
+    // 没有数字变化，返回简化的文本差异
+    return {
+        original: str1.length > 20 ? str1.substring(0, 20) + '...' : str1,
+        modified: str2.length > 20 ? str2.substring(0, 20) + '...' : str2
+    };
+}
+
+// 新增：按顺序分析差异
+function analyzeDifferencesInOrder(pdf1MappedSentences, pdf2MappedSentences) {
+    const allDifferences = [];
+    
+    // 创建句子文本数组
+    const sentences1 = pdf1MappedSentences.map(s => s.text);
+    const sentences2 = pdf2MappedSentences.map(s => s.text);
+    
+    // 使用LCS算法找出基本差异
+    const lcsResult = findDetailedDifferences(sentences1, sentences2);
+    
+    // 分别收集删除和插入的句子，并记录位置
+    const deletedSentences = [];
+    const insertedSentences = [];
+    
+    lcsResult.forEach(diff => {
+        if (diff.type === 'delete') {
+            const sentence = pdf1MappedSentences[diff.index1];
+            deletedSentences.push({
+                sentence: sentence,
+                index: diff.index1,
+                position: sentence.startPos // 在原文中的位置
+            });
+        } else if (diff.type === 'insert') {
+            const sentence = pdf2MappedSentences[diff.index2];
+            insertedSentences.push({
+                sentence: sentence,
+                index: diff.index2,
+                position: sentence.startPos // 在目标文中的位置
+            });
+        }
+    });
+    
+    // 用于标记已处理的句子
+    const processedDeleted = new Set();
+    const processedInserted = new Set();
+    
+    // 对于每个删除的句子，在插入的句子中寻找最匹配的
+    deletedSentences.forEach(deleted => {
+        if (processedDeleted.has(deleted.index)) return;
+        
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        
+        insertedSentences.forEach(inserted => {
+            if (processedInserted.has(inserted.index)) return;
+            
+            const similarity = calculateSimilarity(deleted.sentence.text, inserted.sentence.text);
+            if (similarity > bestSimilarity && similarity > 0.6) { // 相似度阈值
+                bestSimilarity = similarity;
+                bestMatch = inserted;
+            }
+        });
+        
+        if (bestMatch) {
+            // 标记为修改
+            const keyDiff = extractKeyDifferences(deleted.sentence.text, bestMatch.sentence.text);
+            
+            allDifferences.push({
+                type: 'modified',
+                position: deleted.position,
+                sentence1: deleted.sentence,
+                sentence2: bestMatch.sentence,
+                similarity: bestSimilarity,
+                keyDifferences: keyDiff
+            });
+            
+            // 标记已处理
+            processedDeleted.add(deleted.index);
+            processedInserted.add(bestMatch.index);
+        }
+    });
+    
+    // 剩余的删除句子标记为真正的删除
+    deletedSentences.forEach(deleted => {
+        if (!processedDeleted.has(deleted.index)) {
+            allDifferences.push({
+                type: 'deleted',
+                position: deleted.position,
+                sentence: deleted.sentence
+            });
+        }
+    });
+    
+    // 剩余的插入句子标记为真正的新增
+    insertedSentences.forEach(inserted => {
+        if (!processedInserted.has(inserted.index)) {
+            allDifferences.push({
+                type: 'added',
+                position: inserted.position,
+                sentence: inserted.sentence
+            });
+        }
+    });
+    
+    // 按照位置排序
+    allDifferences.sort((a, b) => a.position - b.position);
+    
+    return allDifferences;
+}
+
+// 新增：详细差异查找
+function findDetailedDifferences(sentences1, sentences2) {
+    const differences = [];
+    const lcsMatrix = computeLCSMatrix(sentences1, sentences2);
+    
+    let i = sentences1.length;
+    let j = sentences2.length;
+    
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && sentences1[i-1] === sentences2[j-1]) {
+            i--;
+            j--;
+        } else if (j > 0 && (i === 0 || lcsMatrix[i][j-1] >= lcsMatrix[i-1][j])) {
+            differences.unshift({
+                type: 'insert',
+                index2: j - 1
+            });
+            j--;
+        } else if (i > 0 && (j === 0 || lcsMatrix[i][j-1] < lcsMatrix[i-1][j])) {
+            differences.unshift({
+                type: 'delete',
+                index1: i - 1
+            });
+            i--;
+        }
+    }
+    
+    return differences;
+}
+
+// 查找两个文本数组之间的差异
+function findTextDifferences(texts1, texts2) {
+    const left = [];
+    const right = [];
+    
+    // 使用动态规划查找最长公共子序列
+    const lcsMatrix = computeLCSMatrix(texts1, texts2);
+    
+    // 回溯查找差异
+    let i = texts1.length;
+    let j = texts2.length;
+    
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && texts1[i-1] === texts2[j-1]) {
+            // 文本匹配
+            i--;
+            j--;
+        } else if (j > 0 && (i === 0 || lcsMatrix[i][j-1] >= lcsMatrix[i-1][j])) {
+            // texts2中的文本不同
+            right.unshift(j-1);
+            j--;
+        } else if (i > 0 && (j === 0 || lcsMatrix[i][j-1] < lcsMatrix[i-1][j])) {
+            // texts1中的文本不同
+            left.unshift(i-1);
+            i--;
+        }
+    }
+    
+    return { left, right };
+}
+
+// 计算最长公共子序列矩阵
+function computeLCSMatrix(texts1, texts2) {
+    const m = texts1.length;
+    const n = texts2.length;
+    const matrix = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (texts1[i-1] === texts2[j-1]) {
+                matrix[i][j] = matrix[i-1][j-1] + 1;
+            } else {
+                matrix[i][j] = Math.max(matrix[i-1][j], matrix[i][j-1]);
+            }
+        }
+    }
+    
+    return matrix;
+}
+
+// 按页面分组块
+function groupBlocksByPage(blocks) {
+    const blocksByPage = {};
+    blocks.forEach(block => {
+        const pageNum = block.page;
+        if (!blocksByPage[pageNum]) {
+            blocksByPage[pageNum] = [];
+        }
+        // 检查是否已经添加
+        const alreadyAdded = blocksByPage[pageNum].some(b => b.blockId === block.blockId);
+        if (!alreadyAdded) {
+            blocksByPage[pageNum].push(block);
+        }
+    });
+    
+    return blocksByPage;
+}
+
+// 新增：清除差异结果
+function clearDiffResults() {
+    sortedDifferences = [];
+    renderDiffPanel();
+}
+
+// 新增：截断文本函数
+function truncateText(text, maxLength = 50) {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.substring(0, maxLength);
+}
+
+// 新增：切换展开/收起函数
+function toggleExpand(button, textElement) {
+    const isExpanded = textElement.classList.contains('expanded');
+    
+    if (isExpanded) {
+        textElement.classList.remove('expanded');
+        textElement.classList.add('collapsed');
+        button.textContent = '展开';
+    } else {
+        textElement.classList.remove('collapsed');
+        textElement.classList.add('expanded');
+        button.textContent = '收起';
+    }
+}
+
+// 修正后的渲染差异面板函数 - 按顺序显示
+function renderDiffPanel() {
+    const container = document.getElementById('diff-content');
+    
+    // 检查是否有差异数据
+    if (sortedDifferences.length === 0) {
+        container.innerHTML = '<div class="empty-state">请上传两个PDF文件并点击"查找差异"按钮</div>';
+        return;
+    }
+    
+    let html = '';
+    
+    // 按顺序显示所有差异
+    sortedDifferences.forEach((diff, index) => {
+        const diffNumber = index + 1;
+        let cardContent = '';
+        
+        if (diff.type === 'modified') {
+            const page1 = diff.sentence1.originalBlocks[0]?.page || '未知';
+            const page2 = diff.sentence2.originalBlocks[0]?.page || '未知';
+            const keyDiff = diff.keyDifferences;
+            
+            cardContent = `
+                <div class="diff-card modified">
+                    <div class="diff-card-header">
+                        <span class="diff-type-badge modified">修改</span>
+                        差异 #${diffNumber}
+                    </div>
+                    <div class="diff-text">
+                        <div class="diff-text-label">原文:</div>
+                        <div class="diff-change">${keyDiff.original || '无'}</div>
+                    </div>
+                    <div class="diff-text">
+                        <div class="diff-text-label">改为:</div>
+                        <div class="diff-change">${keyDiff.modified || '无'}</div>
+                    </div>
+                    <div class="diff-location">位置: 第${page1}页 → 第${page2}页</div>
+                </div>
+            `;
+        } else if (diff.type === 'added') {
+            const page = diff.sentence.originalBlocks[0]?.page || '未知';
+            const fullText = diff.sentence.text;
+            const truncatedText = truncateText(fullText);
+            const needsTruncation = fullText.length > 50;
+            
+            cardContent = `
+                <div class="diff-card added">
+                    <div class="diff-card-header">
+                        <span class="diff-type-badge added">新增</span>
+                        差异 #${diffNumber}
+                    </div>
+                    <div class="diff-text">
+                        <div class="diff-content-text diff-added ${needsTruncation ? 'collapsed' : ''}" id="text-${diffNumber}">
+                            ${needsTruncation ? truncatedText : fullText}
+                        </div>
+                        ${needsTruncation ? `<button class="expand-btn" onclick="toggleExpand(this, document.getElementById('text-${diffNumber}'))" data-full-text="${fullText.replace(/"/g, '&quot;')}" data-truncated-text="${truncatedText}">展开</button>` : ''}
+                    </div>
+                    <div class="diff-location">位置: 第${page}页</div>
+                </div>
+            `;
+        } else if (diff.type === 'deleted') {
+            const page = diff.sentence.originalBlocks[0]?.page || '未知';
+            const fullText = diff.sentence.text;
+            const truncatedText = truncateText(fullText);
+            const needsTruncation = fullText.length > 50;
+            
+            cardContent = `
+                <div class="diff-card deleted">
+                    <div class="diff-card-header">
+                        <span class="diff-type-badge deleted">删除</span>
+                        差异 #${diffNumber}
+                    </div>
+                    <div class="diff-text">
+                        <div class="diff-content-text diff-deleted ${needsTruncation ? 'collapsed' : ''}" id="text-${diffNumber}">
+                            ${needsTruncation ? truncatedText : fullText}
+                        </div>
+                        ${needsTruncation ? `<button class="expand-btn" onclick="toggleExpand(this, document.getElementById('text-${diffNumber}'))" data-full-text="${fullText.replace(/"/g, '&quot;')}" data-truncated-text="${truncatedText}">展开</button>` : ''}
+                    </div>
+                    <div class="diff-location">位置: 第${page}页</div>
+                </div>
+            `;
+        }
+        
+        html += cardContent;
+    });
+    
+    container.innerHTML = html;
+}
+
+// 全局函数，供HTML调用
+window.toggleExpand = function(button, textElement) {
+    const isExpanded = textElement.classList.contains('expanded');
+    const fullText = button.getAttribute('data-full-text');
+    const truncatedText = button.getAttribute('data-truncated-text');
+    
+    if (isExpanded) {
+        textElement.classList.remove('expanded');
+        textElement.classList.add('collapsed');
+        textElement.innerHTML = truncatedText;
+        button.textContent = '展开';
+    } else {
+        textElement.classList.remove('collapsed');
+        textElement.classList.add('expanded');
+        textElement.innerHTML = fullText;
+        button.textContent = '收起';
+    }
+};
+
+// **修正后的比较PDF函数 - 解决页数差异导致误高亮的问题**
+async function comparePDFs() {
+    if (!pdf1 || !pdf2) {
+        alert('请先上传两个PDF文件。');
+        return;
+    }
+    
+    clearHighlights();
+    clearDiffResults();
+    
+    // 1. 合并两个PDF的所有文本块
+    const { fullText: pdf1FullText, blockPositions: pdf1BlockPositions } = mergeAllTextBlocks(pdf1ProcessedBlocks);
+    const { fullText: pdf2FullText, blockPositions: pdf2BlockPositions } = mergeAllTextBlocks(pdf2ProcessedBlocks);
+    
+    // 2. 重新分割成句子
+    const pdf1Sentences = splitTextIntoSentences(pdf1FullText);
+    const pdf2Sentences = splitTextIntoSentences(pdf2FullText);
+    
+    // 3. 为句子映射原始块ID
+    const pdf1MappedSentences = mapSentencesToOriginalBlocks(pdf1Sentences, pdf1BlockPositions);
+    const pdf2MappedSentences = mapSentencesToOriginalBlocks(pdf2Sentences, pdf2BlockPositions);
+    
+    // 4. 按顺序执行差异分析
+    showStatus('正在分析差异类型...');
+    sortedDifferences = analyzeDifferencesInOrder(pdf1MappedSentences, pdf2MappedSentences);
+    
+    // 5. 只有在有实际差异时才进行高亮
+    if (sortedDifferences.length > 0) {
+        // 比较句子，找出差异（用于高亮显示）
+        const sentenceTexts1 = pdf1MappedSentences.map(s => s.text);
+        const sentenceTexts2 = pdf2MappedSentences.map(s => s.text);
+        
+        const diffIndices = findTextDifferences(sentenceTexts1, sentenceTexts2);
+        
+        // 获取差异的句子
+        const pdf1DiffSentences = diffIndices.left.map(index => pdf1MappedSentences[index]);
+        const pdf2DiffSentences = diffIndices.right.map(index => pdf2MappedSentences[index]);
+        
+        // 从差异句子中提取原始文本块
+        const pdf1DiffBlocks = pdf1DiffSentences.flatMap(sentence => sentence.originalBlocks);
+        const pdf2DiffBlocks = pdf2DiffSentences.flatMap(sentence => sentence.originalBlocks);
+        
+        // 去重
+        const uniquePdf1Blocks = Array.from(new Map(pdf1DiffBlocks.map(block => [block.blockId, block])).values());
+        const uniquePdf2Blocks = Array.from(new Map(pdf2DiffBlocks.map(block => [block.blockId, block])).values());
+        
+        // 按页面组织差异块
+        const pdf1DiffBlocksByPage = groupBlocksByPage(uniquePdf1Blocks);
+        const pdf2DiffBlocksByPage = groupBlocksByPage(uniquePdf2Blocks);
+        
+        // **修正：只高亮有实际差异的页面和块，不再因为页数不同就高亮整页**
+        // 遍历所有有差异的页面
+        const allDiffPages = new Set([
+            ...Object.keys(pdf1DiffBlocksByPage).map(Number),
+            ...Object.keys(pdf2DiffBlocksByPage).map(Number)
+        ]);
+        
+        allDiffPages.forEach(pageNum => {
+            // 高亮当前页的差异块
+            const pdf1PageDiffs = pdf1DiffBlocksByPage[pageNum] || [];
+            const pdf2PageDiffs = pdf2DiffBlocksByPage[pageNum] || [];
+            
+            highlightDifferences(pdf1PageDiffs, pageNum, 1);
+            highlightDifferences(pdf2PageDiffs, pageNum, 2);
+        });
+        
+        showStatus(`发现 ${sortedDifferences.length} 个差异，已标记相关区域。`);
+    } else {
+        showStatus('未发现内容差异。');
+    }
+    
+    // 更新差异面板
+    showStatus('正在更新差异面板...');
+    renderDiffPanel();
+    
+    showStatus('PDF比较完成。');
+}
+
+// 高亮差异
+function highlightDifferences(diffBlocks, pageNum, pdfNum) {
+    const container = document.querySelector(`#pdf-viewer-${pdfNum} .page-wrapper[data-page="${pageNum}"]`);
+    if (!container) {
+        return;
+    }
+    
+    diffBlocks.forEach(block => {
+        createHighlightOverlay(block, container, pdfNum);
+    });
+}
+
+// 创建高亮叠加层
+function createHighlightOverlay(block, container, pdfNum) {
+    const overlay = document.createElement('div');
+    overlay.className = `highlight-${pdfNum === 1 ? 'left' : 'right'}`;
+    overlay.style.position = 'absolute';
+    overlay.style.left = `${block.x}px`;
+    overlay.style.top = `${block.y - block.height}px`;
+    overlay.style.width = `${block.width}px`;
+    overlay.style.height = `${block.height}px`;
+    overlay.title = `${block.blockId}: ${block.text}`;
+    
+    container.appendChild(overlay);
+    highlightOverlays.push(overlay);
+}
+
+// 清除所有高亮
+function clearHighlights() {
+    highlightOverlays.forEach(overlay => overlay.remove());
+    highlightOverlays = [];
+}
+
+// 处理窗口大小变化
+const handleResize = debounce(() => {
+    // 如果PDF已加载，重新渲染以适应新的容器大小
+    if (pdf1) {
+        renderPDF(pdf1, pdf1Viewer, 1).then(() => {
+            extractTextBlocks(pdf1).then(blocks => {
+                pdf1TextBlocks = blocks;
+                pdf1ProcessedBlocks = processTextBlocks(pdf1TextBlocks);
+            });
+        });
+    }
+    
+    if (pdf2) {
+        renderPDF(pdf2, pdf2Viewer, 2).then(() => {
+            extractTextBlocks(pdf2).then(blocks => {
+                pdf2TextBlocks = blocks;
+                pdf2ProcessedBlocks = processTextBlocks(pdf2TextBlocks);
+            });
+        });
+    }
+    
+    clearHighlights();
+    clearDiffResults();
+    
+    // 如果两个PDF都已加载，重新比较
+    if (pdf1 && pdf2) {
+        // 等待重新渲染和提取文本完成后再比较
+        setTimeout(() => {
+            comparePDFs();
+        }, 1000);
+    }
+}, 500);
+
+window.addEventListener('resize', handleResize);
+    </script>
+</body>
+</html>
